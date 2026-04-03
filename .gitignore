@@ -1,1 +1,8 @@
 ﻿/.process
+/.claude
+/.vscode
+.mcp.json
+CLAUDE.md
+node_modules
+package-lock.json
+__pycache__
