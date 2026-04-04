@@ -13,10 +13,7 @@ import (
 type RingQueue[T any] struct {
 	mu    sync.Mutex
 	cond  *sync.Cond
-	buf   []T
-	head  int
-	tail  int
-	count int
+	ring  ringBuf[T]
 	state closedState
 }
 
@@ -27,7 +24,7 @@ func NewRingQueue[T any](capacity int) *RingQueue[T] {
 		panic("syncx: RingQueue capacity must be >= 1")
 	}
 	q := &RingQueue[T]{
-		buf: make([]T, capacity),
+		ring: newRingBuf[T](capacity),
 	}
 	q.cond = sync.NewCond(&q.mu)
 	return q
@@ -43,11 +40,12 @@ func (q *RingQueue[T]) Push(item T) {
 		return
 	}
 
-	if q.count == len(q.buf) {
-		q.evictOldest()
+	if q.ring.full() {
+		q.ring.pop()
 	}
 
-	q.pushItem(item)
+	q.ring.push(item)
+	q.cond.Broadcast()
 }
 
 // PushEvict adds an item and returns the evicted item if the queue was full.
@@ -62,13 +60,15 @@ func (q *RingQueue[T]) PushEvict(item T) (T, bool) {
 		return zero, false
 	}
 
-	if q.count == len(q.buf) {
-		old := q.evictOldest()
-		q.pushItem(item)
+	if q.ring.full() {
+		old := q.ring.pop()
+		q.ring.push(item)
+		q.cond.Broadcast()
 		return old, true
 	}
 
-	q.pushItem(item)
+	q.ring.push(item)
+	q.cond.Broadcast()
 	var zero T
 	return zero, false
 }
@@ -80,7 +80,7 @@ func (q *RingQueue[T]) Pop(ctx context.Context) (T, error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	for q.count == 0 {
+	for q.ring.empty() {
 		if q.state != openState {
 			var zero T
 			return zero, ErrQueueClosed
@@ -89,7 +89,7 @@ func (q *RingQueue[T]) Pop(ctx context.Context) (T, error) {
 			var zero T
 			return zero, err
 		}
-		if err := q.wait(ctx); err != nil {
+		if err := waitCond(ctx, q.cond); err != nil {
 			var zero T
 			return zero, err
 		}
@@ -100,7 +100,7 @@ func (q *RingQueue[T]) Pop(ctx context.Context) (T, error) {
 		return zero, ErrQueueClosed
 	}
 
-	item := q.popItem()
+	item := q.ring.pop()
 	q.cond.Broadcast()
 	return item, nil
 }
@@ -115,7 +115,7 @@ func (q *RingQueue[T]) TryPop() (T, error) {
 		var zero T
 		return zero, ErrQueueClosed
 	}
-	if q.count == 0 {
+	if q.ring.empty() {
 		var zero T
 		if q.state == closedDrain {
 			return zero, ErrQueueClosed
@@ -123,7 +123,7 @@ func (q *RingQueue[T]) TryPop() (T, error) {
 		return zero, ErrQueueEmpty
 	}
 
-	item := q.popItem()
+	item := q.ring.pop()
 	q.cond.Broadcast()
 	return item, nil
 }
@@ -161,7 +161,7 @@ func (q *RingQueue[T]) CloseNow() {
 func (q *RingQueue[T]) Len() int {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	return q.count
+	return q.ring.len()
 }
 
 // Peek returns the front item without removing it.
@@ -169,52 +169,5 @@ func (q *RingQueue[T]) Len() int {
 func (q *RingQueue[T]) Peek() (T, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-
-	if q.count == 0 {
-		var zero T
-		return zero, false
-	}
-	return q.buf[q.head], true
-}
-
-func (q *RingQueue[T]) evictOldest() T {
-	old := q.buf[q.head]
-	var zero T
-	q.buf[q.head] = zero
-	q.head = (q.head + 1) % len(q.buf)
-	q.count--
-	return old
-}
-
-func (q *RingQueue[T]) pushItem(item T) {
-	q.buf[q.tail] = item
-	q.tail = (q.tail + 1) % len(q.buf)
-	q.count++
-	q.cond.Broadcast()
-}
-
-func (q *RingQueue[T]) popItem() T {
-	item := q.buf[q.head]
-	var zero T
-	q.buf[q.head] = zero // clear reference to help GC
-	q.head = (q.head + 1) % len(q.buf)
-	q.count--
-	return item
-}
-
-// wait blocks on cond.Wait() while respecting context cancellation.
-// Uses context.AfterFunc to trigger Broadcast only when the context is canceled.
-// Must be called with q.mu locked.
-func (q *RingQueue[T]) wait(ctx context.Context) error {
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	stop := context.AfterFunc(ctx, func() {
-		q.cond.Broadcast()
-	})
-	defer stop()
-
-	q.cond.Wait()
-	return ctx.Err()
+	return q.ring.peek()
 }

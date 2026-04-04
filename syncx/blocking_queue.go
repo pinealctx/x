@@ -5,15 +5,6 @@ import (
 	"sync"
 )
 
-// closedState tracks the closure state of a queue.
-type closedState int
-
-const (
-	openState   closedState = iota
-	closedDrain             // Close() called — drain remaining items
-	closedNow               // CloseNow() called — discard remaining items
-)
-
 // BlockingQueue is a generic concurrent queue with blocking and non-blocking modes.
 // It uses a ring buffer backed by sync.Cond for efficient blocking.
 // After Close(), Pop continues returning remaining items then returns ErrQueueClosed.
@@ -21,10 +12,7 @@ const (
 type BlockingQueue[T any] struct {
 	mu    sync.Mutex
 	cond  *sync.Cond
-	buf   []T
-	head  int
-	tail  int
-	count int
+	ring  ringBuf[T]
 	state closedState
 }
 
@@ -35,7 +23,7 @@ func NewBlockingQueue[T any](capacity int) *BlockingQueue[T] {
 		panic("syncx: BlockingQueue capacity must be >= 1")
 	}
 	q := &BlockingQueue[T]{
-		buf: make([]T, capacity),
+		ring: newRingBuf[T](capacity),
 	}
 	q.cond = sync.NewCond(&q.mu)
 	return q
@@ -48,11 +36,11 @@ func (q *BlockingQueue[T]) Push(ctx context.Context, item T) error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	for q.count == len(q.buf) && q.state == openState {
+	for q.ring.full() && q.state == openState {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		if err := q.wait(ctx, q.cond); err != nil {
+		if err := waitCond(ctx, q.cond); err != nil {
 			return err
 		}
 	}
@@ -61,7 +49,7 @@ func (q *BlockingQueue[T]) Push(ctx context.Context, item T) error {
 		return ErrQueueClosed
 	}
 
-	q.pushItem(item)
+	q.ring.push(item)
 	q.cond.Broadcast()
 	return nil
 }
@@ -73,7 +61,7 @@ func (q *BlockingQueue[T]) Pop(ctx context.Context) (T, error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	for q.count == 0 {
+	for q.ring.empty() {
 		if q.state != openState {
 			var zero T
 			return zero, ErrQueueClosed
@@ -82,7 +70,7 @@ func (q *BlockingQueue[T]) Pop(ctx context.Context) (T, error) {
 			var zero T
 			return zero, err
 		}
-		if err := q.wait(ctx, q.cond); err != nil {
+		if err := waitCond(ctx, q.cond); err != nil {
 			var zero T
 			return zero, err
 		}
@@ -93,7 +81,7 @@ func (q *BlockingQueue[T]) Pop(ctx context.Context) (T, error) {
 		return zero, ErrQueueClosed
 	}
 
-	item := q.popItem()
+	item := q.ring.pop()
 	q.cond.Broadcast()
 	return item, nil
 }
@@ -107,11 +95,11 @@ func (q *BlockingQueue[T]) TryPush(item T) error {
 	if q.state != openState {
 		return ErrQueueClosed
 	}
-	if q.count == len(q.buf) {
+	if q.ring.full() {
 		return ErrQueueFull
 	}
 
-	q.pushItem(item)
+	q.ring.push(item)
 	q.cond.Broadcast()
 	return nil
 }
@@ -126,7 +114,7 @@ func (q *BlockingQueue[T]) TryPop() (T, error) {
 		var zero T
 		return zero, ErrQueueClosed
 	}
-	if q.count == 0 {
+	if q.ring.empty() {
 		var zero T
 		if q.state == closedDrain {
 			return zero, ErrQueueClosed
@@ -134,7 +122,7 @@ func (q *BlockingQueue[T]) TryPop() (T, error) {
 		return zero, ErrQueueEmpty
 	}
 
-	item := q.popItem()
+	item := q.ring.pop()
 	q.cond.Broadcast()
 	return item, nil
 }
@@ -172,7 +160,7 @@ func (q *BlockingQueue[T]) CloseNow() {
 func (q *BlockingQueue[T]) Len() int {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	return q.count
+	return q.ring.len()
 }
 
 // Peek returns the front item without removing it.
@@ -180,43 +168,5 @@ func (q *BlockingQueue[T]) Len() int {
 func (q *BlockingQueue[T]) Peek() (T, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-
-	if q.count == 0 {
-		var zero T
-		return zero, false
-	}
-	return q.buf[q.head], true
-}
-
-func (q *BlockingQueue[T]) pushItem(item T) {
-	q.buf[q.tail] = item
-	q.tail = (q.tail + 1) % len(q.buf)
-	q.count++
-}
-
-func (q *BlockingQueue[T]) popItem() T {
-	item := q.buf[q.head]
-	var zero T
-	q.buf[q.head] = zero // clear reference to help GC
-	q.head = (q.head + 1) % len(q.buf)
-	q.count--
-	return item
-}
-
-// wait blocks on c.Wait() while respecting context cancellation.
-// Uses context.AfterFunc to trigger Broadcast only when the context is canceled,
-// avoiding a goroutine-per-wait on the normal (non-canceled) path.
-// Must be called with c.L locked.
-func (q *BlockingQueue[T]) wait(ctx context.Context, c *sync.Cond) error {
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	stop := context.AfterFunc(ctx, func() {
-		c.Broadcast()
-	})
-	defer stop()
-
-	c.Wait()
-	return ctx.Err()
+	return q.ring.peek()
 }

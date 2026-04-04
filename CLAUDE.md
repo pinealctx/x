@@ -164,10 +164,12 @@ x/                                  # 项目根目录
 │   └── errorx_test.go                 #   Error 测试（叶子/包装/链查询/跨域穿透/nil 安全）
 ├── syncx/                             # 并发原语扩展包（依赖 errorx）
 │   ├── errors.go                      #   包级哨兵错误（域隔离）
+│   ├── queue_internal.go              #   ringBuf[T] + closedState + waitCond（队列共享内部实现）
 │   ├── keyed.go                       #   KeyedMutex[K], KeyedLocker[K]（引用计数自动清理）
 │   ├── keyed_test.go                  #   Keyed 测试（序列化、并发、race detector）
-│   ├── blocking_queue.go              #   BlockingQueue[T]（sync.Cond + 环形缓冲区，阻塞/非阻塞双模式）
+│   ├── blocking_queue.go              #   BlockingQueue[T]（sync.Cond + ringBuf，阻塞/非阻塞双模式）
 │   ├── blocking_queue_test.go         #   BlockingQueue 测试（25 个，含并发 + race detector）
-│   ├── ring_queue.go                  #   RingQueue[T]（sync.Cond + 环形缓冲区，满时驱逐最老）
-│   └── ring_queue_test.go             #   RingQueue 测试（24 个，含并发 + race detector）
+│   ├── ring_queue.go                  #   RingQueue[T]（sync.Cond + ringBuf，满时驱逐最老）
+│   ├── ring_queue_test.go             #   RingQueue 测试（24 个，含并发 + race detector）
+│   └── queue_internal_test.go         #   ringBuf/waitCond/边界 内部单元测试（11 个）
 ```

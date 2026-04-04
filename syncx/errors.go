@@ -10,7 +10,7 @@ type SyncError = errorx.Sentinel[syncxTag]
 
 // Queue sentinel errors.
 var (
-	ErrQueueClosed = SyncError("queue closed")
-	ErrQueueFull   = SyncError("queue full")
-	ErrQueueEmpty  = SyncError("queue empty")
+	ErrQueueClosed = SyncError("syncx.queue.closed")
+	ErrQueueFull   = SyncError("syncx.queue.full")
+	ErrQueueEmpty  = SyncError("syncx.queue.empty")
 )
