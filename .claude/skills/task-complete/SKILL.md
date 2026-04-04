@@ -48,7 +48,8 @@ git add .
 
 读取 `task.md` 中定义的 `audit-scope`，调用对应的 audit agent：
 
-- **串行**逐一运行每个 audit agent（禁止并行），等上一个完成后再启动下一个
+- **并行**运行所有 audit agent（使用单条消息中的多个 Agent 工具调用）
+- 每个 audit agent 都是只读的（Read/Grep/Glob），互不依赖，可以安全并行
 - 收集所有审计结果，分类为：
   - **❌ 冲突**（必须修复）
   - **⚠️ 警告**（应该修复）
