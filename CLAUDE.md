@@ -1,0 +1,171 @@
+# 概要
+
+go语言相关的扩展基础库
+
+## 当网络不可用时，设置代理环境变量
+
+网络代理URI环境变量为PROXY_URI。
+```
+export http_proxy=$PROXY_URI
+export https_proxy=$PROXY_URI
+```
+
+## Execution Baseline
+
+- 任何问题都需要第一性原理，目的？为什么要这么做？如何验证？不允许直接跳到结论或解决方案。
+- 思考问题需要有层次，层次是对抗复杂性的利器。**禁止在没有层次的情况下直接实现**，必须先设计层次结构（如模块划分、接口定义、抽象层次等），再在每个层次上实现。
+- 开始任务前先明确目标和验收标准。
+- 目标不清晰先澄清，不在模糊目标下实现。
+- 如果遇到难题，先网络搜索相关信息来补齐知识盲区，再设计可验证方案。
+- 复杂任务先拆分为可验证子目标并逐一实现，拆分时必须为每个子任务定义 audit-scope。
+- 为每个任务建立检查清单，确保实现符合预期并且没有遗漏。
+- 实现过程中持续记录日志，方便回顾和总结经验。
+- 实现新功能前，先检查项目中是否已有可复用的基础设施（如 logger、config、cache、HTTP client 等），优先复用而非重新实现。
+- **子任务完成后，等待用户调用 `/task-complete` 触发审计和提交流程**，不要自动提交。
+- 代码注释：(函数，类型，接口，结构体，全局变量等)为公开时需要清晰的注释说明职责，为内部根据情况可简洁注释；复杂逻辑加行内注释，避免过度注释；注释用英文。
+
+## 设计原则：可测试性
+
+**所有分层、模块、函数设计都必须满足可测试性。**
+
+具体要求：
+
+1. **接口隔离**：模块间通过接口通信，不依赖具体实现
+   ```go
+   // ✅ 正确：依赖接口
+   type AgentRunner struct {
+       sessionService SessionService  // 接口类型
+       toolRegistry   ToolRegistry    // 接口类型
+   }
+
+   // ❌ 错误：依赖具体实现
+   type AgentRunner struct {
+       sessionService *SessionServiceImpl
+   }
+   ```
+
+2. **依赖注入**：所有依赖通过构造函数注入，便于 mock
+   ```go
+   // ✅ 正确：依赖注入
+   func NewAgentRunner(sess SessionService, tools ToolRegistry) *AgentRunner {
+       return &AgentRunner{sessionService: sess, toolRegistry: tools}
+   }
+
+   // ❌ 错误：内部创建依赖
+   func NewAgentRunner() *AgentRunner {
+       return &AgentRunner{sessionService: NewSessionService()}  // 无法 mock
+   }
+   ```
+
+3. **单向依赖**：上层依赖下层，下层不依赖上层
+   ```
+   ✅ 正确：
+   TUI → Agent → Session → DB
+
+   ❌ 错误：
+   Agent → TUI  （下层依赖上层）
+   ```
+
+4. **PubSub 解耦**：跨层向上通信通过事件，不直接调用
+   ```go
+   // ✅ 正确：发布事件
+   func (a *Agent) Run(ctx context.Context) {
+       a.bus.Publish(Event{Type: "agent.thinking", Data: "..."})
+   }
+
+   // ❌ 错误：直接调用上层
+   func (a *Agent) Run(ctx context.Context) {
+       a.tui.ShowSpinner("...")  // Agent 不应该知道 TUI
+   }
+   ```
+
+**测试金字塔**：
+```
+        /\
+       /  \  E2E Tests（少量）
+      /────\
+     /      \ Integration Tests（中等）
+    /────────\
+   /          \ Unit Tests（大量）
+  /────────────\
+```
+
+## 任务管理
+
+### 任务目录结构
+
+```
+.process
+   task/
+   task-xxx/
+      task.md          # 任务目标、子任务划分、验收标准
+      progress.md      # 跟踪日志 + 审计记录
+      notes.md         # 讨论记录（由 /discuss 生成，可选）
+      decisions.md     # 决策摘要（由 /discuss 生成，可选）
+      subtask_1/
+         task.md
+         progress.md
+      subtask_2/
+         task.md
+         progress.md
+```
+
+### 文件职责
+
+- **task.md**：任务目标、描述、子任务划分（含 audit-scope）、参考资料、验收标准
+- **progress.md**：跟踪日志 + 审计记录
+
+### 做子任务计划时需要根据情况将 [Audit Router](.claude/agents/audit-router.md) 纳入考虑，明确每个子任务需要哪些审计项，让审计成为设计的一部分，而不是事后补充的检查点。
+
+### task.md 中的 audit-scope 定义
+
+在制定子任务计划时，必须为每个子任务定义 `audit-scope`，明确关联的审计项和输出类型。**audit-scope 是必填项，没有 audit-scope 的子任务不允许开始执行。**
+
+```markdown
+### subtask_1: 实现 XXX 功能
+
+**输出类型**: 代码
+**audit-scope**:
+- audit-go-code-style
+- audit-go-naming
+- audit-go-error-handling
+- audit-test-strategy
+
+**目标**: ...
+**验收标准**: ...
+```
+
+输出类型与audit的可能的对应关系，详细的启用规则在 audit-router.md 中定义：
+- **任意代码** → audit-engineering-baseline + audit-engineering-quality
+- **go代码** → go-code-style、go-naming、go-error-handling、go-design 等代码相关 audit
+- **文档** → audit-engineering-baseline（目标与验收、执行纪律）
+- **配置** → audit-engineering-baseline、audit-config、audit-security
+- **测试** → audit-test-strategy
+
+## 路径
+对于文件和目录路径，尽量使用相对路径，避免使用绝对路径，以确保在不同环境下的兼容性和可移植性。
+
+## 代码注释规则
+导出函数、类型、结构体、接口应在需要时提供清晰的英文注释，说明职责和使用边界；比较复杂的逻辑可以添加少量行内注释，解释关键步骤和决策理由；公共接口仅在用法不直观时再补充示例，避免模板鼓励过度注释。
+
+## 项目结构
+此内容需要在项目结构发生变化后更新，保持与实际项目结构一致，更新内容在下面：
+
+```
+x/                                  # 项目根目录
+├── CLAUDE.md                          # 本文件
+├── LICENSE
+├── go.mod                             # github.com/pinealctx/x
+├── docs/                              # 项目文档（设计、规划）
+├── errorx/                            # 错误处理基础层（零外部依赖，泛型驱动）
+│   ├── sentinel.go                    #   Sentinel[D] 哨兵错误（幽灵类型域隔离）
+│   ├── errorx.go                      #   Error[Code] 带码错误 + IsCode/ContainsCode 链查询
+│   ├── sentinel_test.go               #   Sentinel 测试（域隔离、跨域、fmt.Errorf 穿透）
+│   └── errorx_test.go                 #   Error 测试（叶子/包装/链查询/跨域穿透/nil 安全）
+├── syncx/                             # 并发原语扩展包（依赖 errorx）
+│   ├── errors.go                      #   包级哨兵错误（域隔离）
+│   ├── keyed.go                       #   KeyedMutex[K], KeyedLocker[K]（引用计数自动清理）
+│   ├── keyed_test.go                  #   Keyed 测试（序列化、并发、race detector）
+│   ├── blocking_queue.go              #   BlockingQueue[T]（sync.Cond + 环形缓冲区，阻塞/非阻塞双模式）
+│   └── blocking_queue_test.go         #   BlockingQueue 测试（24 个，含并发 + race detector）
+```
