@@ -172,4 +172,15 @@ x/                                  # 项目根目录
 │   ├── ring_queue.go                  #   RingQueue[T]（sync.Cond + ringBuf，满时驱逐最老）
 │   ├── ring_queue_test.go             #   RingQueue 测试（24 个，含并发 + race detector）
 │   └── queue_internal_test.go         #   ringBuf/waitCond/边界 内部单元测试（11 个）
+├── ds/                                # 泛型数据结构包（零外部依赖）
+│   ├── ordered_map.go                 #   OrderedMap[K,V]（map+侵入式双向链表，O(1)+零分配迭代）
+│   ├── ordered_map_test.go
+│   ├── set.go                         #   Set[T]（map[T]struct{}，集合运算+关系判断）
+│   ├── set_test.go
+│   ├── bimap.go                       #   BiMap[K,V]（双map双向O(1)查找）
+│   ├── bimap_test.go
+│   ├── stack.go                       #   Stack[T]（slice LIFO栈）
+│   ├── stack_test.go
+│   ├── heap.go                        #   Heap[T]（二叉堆+自定义compare，min/max便捷构造）
+│   └── heap_test.go
 ```
