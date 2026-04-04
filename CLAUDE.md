@@ -167,5 +167,7 @@ x/                                  # 项目根目录
 │   ├── keyed.go                       #   KeyedMutex[K], KeyedLocker[K]（引用计数自动清理）
 │   ├── keyed_test.go                  #   Keyed 测试（序列化、并发、race detector）
 │   ├── blocking_queue.go              #   BlockingQueue[T]（sync.Cond + 环形缓冲区，阻塞/非阻塞双模式）
-│   └── blocking_queue_test.go         #   BlockingQueue 测试（24 个，含并发 + race detector）
+│   ├── blocking_queue_test.go         #   BlockingQueue 测试（25 个，含并发 + race detector）
+│   ├── ring_queue.go                  #   RingQueue[T]（sync.Cond + 环形缓冲区，满时驱逐最老）
+│   └── ring_queue_test.go             #   RingQueue 测试（24 个，含并发 + race detector）
 ```
