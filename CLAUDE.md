@@ -151,7 +151,21 @@ export https_proxy=$PROXY_URI
 ## 项目结构
 此内容需要在项目结构发生变化后更新，保持与实际项目结构一致，更新内容在下面：
 
-```
+### 任务历史
+
+| 任务 | 目录 | 包 | 状态 | 子任务 |
+|------|------|-----|------|--------|
+| errorx 包 | `.process/task/task-errorx/` | errorx | ✅ 完成 | — |
+| syncx 包 | `.process/task/task-syncx/` | syncx | ✅ 完成 | subtask_keyed, subtask_blocking_queue, subtask_ring_queue, subtask_refactor_shared |
+| ds 包 | `.process/task/task-ds/` | ds | ✅ 完成 | subtask_ordered_map, subtask_set, subtask_bimap, subtask_stack, subtask_heap |
+| syncx ReadThrough | `.process/task/task-syncx-readthrough/` | syncx | ✅ 完成 | subtask_read_through |
+
+设计讨论记录在 `.process/discuss/overview_N/` 中：
+- `overview_0` — errorx + syncx 首批模块设计
+- `overview_1` — ds 包设计
+- `overview_2` — 后续模块评估（cache/stringx/timex/randx 等 10 个候选）
+
+### 源码目录
 x/                                  # 项目根目录
 ├── CLAUDE.md                          # 本文件
 ├── LICENSE
@@ -172,6 +186,8 @@ x/                                  # 项目根目录
 │   ├── ring_queue.go                  #   RingQueue[T]（sync.Cond + ringBuf，满时驱逐最老）
 │   ├── ring_queue_test.go             #   RingQueue 测试（24 个，含并发 + race detector）
 │   └── queue_internal_test.go         #   ringBuf/waitCond/边界 内部单元测试（11 个）
+│   ├── read_through.go                #   Cache[K,V] 接口 + ReadThrough[K,V] cache-aside + per-key stampede protection
+│   └── read_through_test.go           #   ReadThrough 测试（13 个，含并发 + race detector）
 ├── ds/                                # 泛型数据结构包（零外部依赖）
 │   ├── ordered_map.go                 #   OrderedMap[K,V]（map+侵入式双向链表，O(1)+零分配迭代）
 │   ├── ordered_map_test.go
@@ -184,3 +200,19 @@ x/                                  # 项目根目录
 │   ├── heap.go                        #   Heap[T]（二叉堆+自定义compare，min/max便捷构造）
 │   └── heap_test.go
 ```
+
+### 已评估不做（记录供参考）
+
+| 模块 | 理由 | 替代方案 |
+|------|------|---------|
+| cache | 社区有成熟泛型库 | go-freelru |
+| stringx | 3-5 行薄函数，封装增加认知负担 | stdlib strings |
+| timex | Go 1.23+ Timer 已修复，vDSO 优化 Now() | stdlib time |
+| randx | math/rand/v2 已是 ChaCha8+OS熵 | stdlib math/rand/v2 |
+| convx | strconv 虽繁琐但语义清晰 | stdlib strconv |
+| restx | 社区有成熟方案 | go-resty/resty |
+| jsonx | 等 encoding/json/v2 稳定 | stdlib encoding/json |
+| pubsub | 应用架构组件，非基础库 | 项目内实现 |
+| slicex | 已被 lo 覆盖 | samber/lo |
+| idgen | ID 策略因项目而异 | 应用层 |
+| mess | AES+base58 整数混淆，场景太窄 | 按需实现 |
