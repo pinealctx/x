@@ -1,3 +1,6 @@
+// Package retryx is tested with stdlib only (testing package).
+// Property-based testing (rapid/gopter) is intentionally not used to keep
+// zero external dependencies per the project constraint.
 package retryx
 
 import (
@@ -97,6 +100,9 @@ func TestFixed_PanicOnNegativeInterval(t *testing.T) {
 }
 
 func TestJitter_WithinRange(t *testing.T) {
+	// Tests range bounds only, not distribution uniformity.
+	// For jitter, the critical invariant is "output stays within [lo, hi]";
+	// distribution shape is irrelevant to correctness.
 	const ratio = 0.1
 	base := 1 * time.Second
 	inner := NewFixed(base)

@@ -80,7 +80,9 @@ func (j *jitterBackoff) Wait(attempt int) time.Duration {
 	w := j.inner.Wait(attempt)
 	lo := float64(w) * (1 - j.ratio)
 	hi := float64(w) * (1 + j.ratio)
-	// math/rand/v2 uses ChaCha8 PRNG — sufficient for jitter, not cryptographic.
+	// Intentionally uses the global rand from math/rand/v2 (ChaCha8 PRNG, thread-safe).
+	// Jitter exists to introduce non-determinism; deterministic replay contradicts its
+	// purpose. For deterministic backoff in tests, use NewFixed without WithJitter.
 	return time.Duration(lo + rand.Float64()*(hi-lo)) //nolint:gosec // G404: intentional non-crypto RNG
 }
 
