@@ -160,7 +160,7 @@ export https_proxy=$PROXY_URI
 | ds 包 | `.process/task/task-ds/` | ds | ✅ 完成 | subtask_ordered_map, subtask_set, subtask_bimap, subtask_stack, subtask_heap |
 | syncx ReadThrough | `.process/task/task-syncx-readthrough/` | syncx | ✅ 完成 | subtask_read_through |
 | syncx Pool[T] | `.process/task/task-syncx-pool/` | syncx | ✅ 完成 | subtask_pool |
-| retryx 包 | `.process/task/task-retryx/` | retryx | 📋 待实施 | subtask_backoff, subtask_retry |
+| retryx 包 | `.process/task/task-retryx/` | retryx | ✅ 完成 | subtask_backoff, subtask_retry |
 | ctxv 包 | `.process/task/task-ctxv/` | ctxv | 📋 待实施 | subtask_ctxv |
 | syncx Dispatcher | `.process/task/task-syncx-dispatcher/` | syncx | 📋 待实施 | subtask_dispatcher |
 | syncx SingleFlight | `.process/task/task-syncx-singleflight/` | syncx | 📋 待实施 | subtask_singleflight |
@@ -198,6 +198,11 @@ x/                                  # 项目根目录
 │   ├── read_through_test.go           #   ReadThrough 测试（13 个，含并发 + race detector）
 │   ├── pool.go                        #   Pool[T] 类型安全 sync.Pool 泛型封装（可选 reset）
 │   └── pool_test.go                   #   Pool 测试（12 个，含并发 + race detector）
+├── retryx/                           # 泛型重试库（零外部依赖，可组合 backoff 策略）
+│   ├── backoff.go                    #   BackoffStrategy 接口 + Exponential/Fixed + WithJitter/WithMaxWait 装饰器
+│   ├── backoff_test.go               #   BackoffStrategy 测试（22 个，含边界值 + 装饰器组合）
+│   ├── retry.go                      #   Do[T] 泛型重试 + Option（Attempts/Backoff/RetryIf/OnRetry）
+│   └── retry_test.go                 #   Do[T] 测试（14 个，含并发 + race detector + context 取消）
 ├── ds/                                # 泛型数据结构包（零外部依赖）
 │   ├── ordered_map.go                 #   OrderedMap[K,V]（map+侵入式双向链表，O(1)+零分配迭代）
 │   ├── ordered_map_test.go
