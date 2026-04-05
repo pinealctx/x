@@ -159,11 +159,19 @@ export https_proxy=$PROXY_URI
 | syncx 包 | `.process/task/task-syncx/` | syncx | ✅ 完成 | subtask_keyed, subtask_blocking_queue, subtask_ring_queue, subtask_refactor_shared |
 | ds 包 | `.process/task/task-ds/` | ds | ✅ 完成 | subtask_ordered_map, subtask_set, subtask_bimap, subtask_stack, subtask_heap |
 | syncx ReadThrough | `.process/task/task-syncx-readthrough/` | syncx | ✅ 完成 | subtask_read_through |
+| syncx Pool[T] | `.process/task/task-syncx-pool/` | syncx | ✅ 完成 | subtask_pool |
+| retryx 包 | `.process/task/task-retryx/` | retryx | 📋 待实施 | subtask_backoff, subtask_retry |
+| ctxv 包 | `.process/task/task-ctxv/` | ctxv | 📋 待实施 | subtask_ctxv |
+| syncx Dispatcher | `.process/task/task-syncx-dispatcher/` | syncx | 📋 待实施 | subtask_dispatcher |
+| syncx SingleFlight | `.process/task/task-syncx-singleflight/` | syncx | 📋 待实施 | subtask_singleflight |
+| syncx Group[T] | `.process/task/task-syncx-group/` | syncx | 📋 待实施 | subtask_group |
+| ds Clone 补全 | `.process/task/task-ds-clone/` | ds | 📋 待实施 | subtask_clone |
 
 设计讨论记录在 `.process/discuss/overview_N/` 中：
 - `overview_0` — errorx + syncx 首批模块设计
 - `overview_1` — ds 包设计
 - `overview_2` — 后续模块评估（cache/stringx/timex/randx 等 10 个候选）
+- `overview_3` — 扩展阶段规划（Pool/retryx/ctxv/Dispatcher/SingleFlight/Group/Clone）
 
 ### 源码目录
 x/                                  # 项目根目录
@@ -187,7 +195,9 @@ x/                                  # 项目根目录
 │   ├── ring_queue_test.go             #   RingQueue 测试（24 个，含并发 + race detector）
 │   └── queue_internal_test.go         #   ringBuf/waitCond/边界 内部单元测试（11 个）
 │   ├── read_through.go                #   Cache[K,V] 接口 + ReadThrough[K,V] cache-aside + per-key stampede protection
-│   └── read_through_test.go           #   ReadThrough 测试（13 个，含并发 + race detector）
+│   ├── read_through_test.go           #   ReadThrough 测试（13 个，含并发 + race detector）
+│   ├── pool.go                        #   Pool[T] 类型安全 sync.Pool 泛型封装（可选 reset）
+│   └── pool_test.go                   #   Pool 测试（12 个，含并发 + race detector）
 ├── ds/                                # 泛型数据结构包（零外部依赖）
 │   ├── ordered_map.go                 #   OrderedMap[K,V]（map+侵入式双向链表，O(1)+零分配迭代）
 │   ├── ordered_map_test.go
