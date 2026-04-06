@@ -163,7 +163,7 @@ export https_proxy=$PROXY_URI
 | retryx 包 | `.process/task/task-retryx/` | retryx | ✅ 完成 | subtask_backoff, subtask_retry |
 | ctxv 包 | `.process/task/task-ctxv/` | ctxv | ✅ 完成 | subtask_ctxv |
 | syncx Dispatcher | `.process/task/task-syncx-dispatcher/` | syncx | ✅ 完成 | subtask_dispatcher |
-| syncx SingleFlight | `.process/task/task-syncx-singleflight/` | syncx | 📋 待实施 | subtask_singleflight |
+| syncx SingleFlight | `.process/task/task-syncx-singleflight/` | syncx | ✅ 完成 | subtask_singleflight |
 | syncx Group[T] | `.process/task/task-syncx-group/` | syncx | 📋 待实施 | subtask_group |
 | ds Clone 补全 | `.process/task/task-ds-clone/` | ds | 📋 待实施 | subtask_clone |
 
@@ -199,7 +199,9 @@ x/                                  # 项目根目录
 │   ├── pool.go                        #   Pool[T] 类型安全 sync.Pool 泛型封装（可选 reset）
 │   ├── pool_test.go                   #   Pool 测试（12 个，含并发 + race detector）
 │   ├── dispatcher.go                  #   Dispatcher[K,V] 按 key hash 路由到固定 goroutine 的 slot 调度器
-│   └── dispatcher_test.go             #   Dispatcher 测试（17 个，含并发 + race detector）
+│   ├── dispatcher_test.go             #   Dispatcher 测试（17 个，含并发 + race detector）
+│   ├── singleflight.go                #   SingleFlight[K,V] 泛型并发去重（同 key 只执行一次，共享结果）
+│   └── singleflight_test.go           #   SingleFlight 测试（12 个，含并发 + race detector）
 ├── retryx/                           # 泛型重试库（零外部依赖，可组合 backoff 策略）
 │   ├── backoff.go                    #   BackoffStrategy 接口 + Exponential/Fixed + WithJitter/WithMaxWait 装饰器
 │   ├── backoff_test.go               #   BackoffStrategy 测试（22 个，含边界值 + 装饰器组合）
