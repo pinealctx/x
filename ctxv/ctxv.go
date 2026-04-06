@@ -1,5 +1,3 @@
-// Package ctxv provides type-safe context values through generic keys,
-// eliminating the boilerplate of type assertions with [context.Value].
 package ctxv
 
 import (

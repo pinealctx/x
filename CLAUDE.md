@@ -190,11 +190,13 @@ x/                                  # 项目根目录
 ├── go.mod                             # github.com/pinealctx/x
 ├── docs/                              # 项目文档（设计、规划）
 ├── errorx/                            # 错误处理基础层（零外部依赖，泛型驱动）
+│   ├── doc.go                         #   包文档
 │   ├── sentinel.go                    #   Sentinel[D] 哨兵错误（幽灵类型域隔离）
 │   ├── errorx.go                      #   Error[Code] 带码错误 + IsCode/ContainsCode 链查询
 │   ├── sentinel_test.go               #   Sentinel 测试（域隔离、跨域、fmt.Errorf 穿透）
 │   └── errorx_test.go                 #   Error 测试（叶子/包装/链查询/跨域穿透/nil 安全）
 ├── syncx/                             # 并发原语扩展包（依赖 errorx）
+│   ├── doc.go                         #   包文档
 │   ├── errors.go                      #   包级哨兵错误（域隔离）
 │   ├── queue_internal.go              #   ringBuf[T] + closedState + waitCond（队列共享内部实现）
 │   ├── keyed.go                       #   KeyedMutex[K], KeyedLocker[K]（引用计数自动清理）
@@ -215,14 +217,17 @@ x/                                  # 项目根目录
 │   ├── group.go                        #   Group[T] 泛型并发结果收集器（收集所有 (T,error)，按提交顺序返回）
 │   └── group_test.go                   #   Group 测试（16 个，含并发 + race detector + panic recovery）
 ├── retryx/                           # 泛型重试库（零外部依赖，可组合 backoff 策略）
+│   ├── doc.go                        #   包文档
 │   ├── backoff.go                    #   BackoffStrategy 接口 + Exponential/Fixed + WithJitter/WithMaxWait 装饰器
 │   ├── backoff_test.go               #   BackoffStrategy 测试（22 个，含边界值 + 装饰器组合）
 │   ├── retry.go                      #   Do[T] 泛型重试 + Option（Attempts/Backoff/RetryIf/OnRetry）
 │   └── retry_test.go                 #   Do[T] 测试（14 个，含并发 + race detector + context 取消）
 ├── ctxv/                              # 类型安全 context value（零外部依赖，泛型 Key[T]）
+│   ├── doc.go                        #   包文档
 │   ├── ctxv.go                       #   Key[T], NewKey, WithValue, Value, MustValue, String
 │   └── ctxv_test.go                  #   ctxv 测试（13 个，含并发 + race detector）
 ├── ds/                                # 泛型数据结构包（零外部依赖）
+│   ├── doc.go                         #   包文档
 │   ├── ordered_map.go                 #   OrderedMap[K,V]（map+侵入式双向链表，O(1)+零分配迭代）
 │   ├── ordered_map_test.go
 │   ├── set.go                         #   Set[T]（map[T]struct{}，集合运算+关系判断）
