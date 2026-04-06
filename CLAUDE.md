@@ -161,7 +161,7 @@ export https_proxy=$PROXY_URI
 | syncx ReadThrough | `.process/task/task-syncx-readthrough/` | syncx | ✅ 完成 | subtask_read_through |
 | syncx Pool[T] | `.process/task/task-syncx-pool/` | syncx | ✅ 完成 | subtask_pool |
 | retryx 包 | `.process/task/task-retryx/` | retryx | ✅ 完成 | subtask_backoff, subtask_retry |
-| ctxv 包 | `.process/task/task-ctxv/` | ctxv | 📋 待实施 | subtask_ctxv |
+| ctxv 包 | `.process/task/task-ctxv/` | ctxv | ✅ 完成 | subtask_ctxv |
 | syncx Dispatcher | `.process/task/task-syncx-dispatcher/` | syncx | 📋 待实施 | subtask_dispatcher |
 | syncx SingleFlight | `.process/task/task-syncx-singleflight/` | syncx | 📋 待实施 | subtask_singleflight |
 | syncx Group[T] | `.process/task/task-syncx-group/` | syncx | 📋 待实施 | subtask_group |
@@ -203,6 +203,9 @@ x/                                  # 项目根目录
 │   ├── backoff_test.go               #   BackoffStrategy 测试（22 个，含边界值 + 装饰器组合）
 │   ├── retry.go                      #   Do[T] 泛型重试 + Option（Attempts/Backoff/RetryIf/OnRetry）
 │   └── retry_test.go                 #   Do[T] 测试（14 个，含并发 + race detector + context 取消）
+├── ctxv/                              # 类型安全 context value（零外部依赖，泛型 Key[T]）
+│   ├── ctxv.go                       #   Key[T], NewKey, WithValue, Value, MustValue, String
+│   └── ctxv_test.go                  #   ctxv 测试（13 个，含并发 + race detector）
 ├── ds/                                # 泛型数据结构包（零外部依赖）
 │   ├── ordered_map.go                 #   OrderedMap[K,V]（map+侵入式双向链表，O(1)+零分配迭代）
 │   ├── ordered_map_test.go
