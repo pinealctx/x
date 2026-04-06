@@ -14,3 +14,8 @@ var (
 	ErrQueueFull   = SyncError("syncx.queue.full")
 	ErrQueueEmpty  = SyncError("syncx.queue.empty")
 )
+
+// Dispatcher sentinel errors.
+var (
+	ErrDispatcherClosed = SyncError("syncx.dispatcher.closed")
+)
