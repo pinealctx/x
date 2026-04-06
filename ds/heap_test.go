@@ -264,6 +264,89 @@ func TestHeap_NilComparePanics_NewHeapFrom(t *testing.T) {
 	NewHeapFrom(nil, []int{1, 2, 3})
 }
 
+func TestHeap_CloneIndependent(t *testing.T) {
+	h := NewMinHeap[int]()
+	h.Push(1)
+	h.Push(2)
+	h.Push(3)
+
+	c := h.Clone()
+	// modify clone: original unchanged
+	c.Push(4)
+	if h.Len() != 3 {
+		t.Fatalf("original Len = %d, want 3 after clone mutation", h.Len())
+	}
+
+	// modify original: clone unchanged
+	h.Push(5)
+	if c.Len() != 4 {
+		t.Fatalf("clone Len = %d, want 4 after original mutation", c.Len())
+	}
+}
+
+func TestHeap_CloneEmpty(t *testing.T) {
+	h := NewMinHeap[int]()
+	c := h.Clone()
+	if c.Len() != 0 {
+		t.Fatalf("empty clone Len = %d, want 0", c.Len())
+	}
+}
+
+func TestHeap_CloneSingleElement(t *testing.T) {
+	h := NewMinHeap[int]()
+	h.Push(42)
+	c := h.Clone()
+	if c.Len() != 1 {
+		t.Fatalf("clone Len = %d, want 1", c.Len())
+	}
+	v, ok := c.Peek()
+	if !ok || v != 42 {
+		t.Fatalf("clone Peek = %d, want 42", v)
+	}
+}
+
+func TestHeap_ClonePreservesHeapProperty(t *testing.T) {
+	h := NewMinHeap[int]()
+	h.Push(5)
+	h.Push(3)
+	h.Push(1)
+	h.Push(4)
+	h.Push(2)
+
+	c := h.Clone()
+	// drain clone in sorted order to verify heap property
+	var got []int
+	for v := range c.Drain() {
+		got = append(got, v)
+	}
+	if !slices.Equal(got, []int{1, 2, 3, 4, 5}) {
+		t.Fatalf("clone Drain = %v, want [1 2 3 4 5]", got)
+	}
+	// original should be unmodified
+	if h.Len() != 5 {
+		t.Fatalf("original Len = %d, want 5", h.Len())
+	}
+}
+
+func TestHeap_CloneLargeHeap(t *testing.T) {
+	h := NewMinHeap[int]()
+	for i := 999; i >= 0; i-- {
+		h.Push(i)
+	}
+	c := h.Clone()
+	if c.Len() != 1000 {
+		t.Fatalf("clone Len = %d, want 1000", c.Len())
+	}
+	// verify sorted drain
+	prev := -1
+	for v := range c.Drain() {
+		if v <= prev {
+			t.Fatalf("clone drain not sorted: %d after %d", v, prev)
+		}
+		prev = v
+	}
+}
+
 func TestHeap_ConcurrentRead(t *testing.T) {
 	h := NewMinHeap[int]()
 	for i := range 100 {

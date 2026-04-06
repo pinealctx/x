@@ -93,6 +93,13 @@ func (h *Heap[T]) Clear() {
 	h.data = h.data[:0]
 }
 
+// Clone returns a shallow copy of the heap. The heap property is preserved.
+func (h *Heap[T]) Clone() *Heap[T] {
+	cp := make([]T, len(h.data))
+	copy(cp, h.data)
+	return &Heap[T]{data: cp, compare: h.compare}
+}
+
 // All returns an iterator over all elements in arbitrary order. Does not modify the heap.
 func (h *Heap[T]) All() iter.Seq[T] {
 	return func(yield func(T) bool) {

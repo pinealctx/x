@@ -12,9 +12,18 @@ type BiMap[K comparable, V comparable] struct {
 
 // NewBiMap creates an empty BiMap.
 func NewBiMap[K, V comparable]() *BiMap[K, V] {
+	return NewBiMapWithCapacity[K, V](0)
+}
+
+// NewBiMapWithCapacity creates a BiMap with pre-allocated capacity.
+// Panics if n is negative.
+func NewBiMapWithCapacity[K, V comparable](n int) *BiMap[K, V] {
+	if n < 0 {
+		panic("ds: NewBiMapWithCapacity: negative capacity")
+	}
 	return &BiMap[K, V]{
-		forward: make(map[K]V),
-		inverse: make(map[V]K),
+		forward: make(map[K]V, n),
+		inverse: make(map[V]K, n),
 	}
 }
 
@@ -87,6 +96,16 @@ func (m *BiMap[K, V]) All() iter.Seq2[K, V] {
 			}
 		}
 	}
+}
+
+// Clone returns a shallow copy of the BiMap.
+func (m *BiMap[K, V]) Clone() *BiMap[K, V] {
+	c := NewBiMapWithCapacity[K, V](m.Len())
+	for k, v := range m.forward {
+		c.forward[k] = v
+		c.inverse[v] = k
+	}
+	return c
 }
 
 // Keys returns all keys.

@@ -61,6 +61,13 @@ func (s *Stack[T]) Clear() {
 	s.data = s.data[:0]
 }
 
+// Clone returns a shallow copy of the stack. The element order is preserved.
+func (s *Stack[T]) Clone() *Stack[T] {
+	cp := make([]T, len(s.data))
+	copy(cp, s.data)
+	return &Stack[T]{data: cp}
+}
+
 // All returns an iterator over elements in LIFO order (top to bottom).
 func (s *Stack[T]) All() iter.Seq[T] {
 	return func(yield func(T) bool) {

@@ -165,7 +165,7 @@ export https_proxy=$PROXY_URI
 | syncx Dispatcher | `.process/task/task-syncx-dispatcher/` | syncx | ✅ 完成 | subtask_dispatcher |
 | syncx SingleFlight | `.process/task/task-syncx-singleflight/` | syncx | ✅ 完成 | subtask_singleflight |
 | syncx Group[T] | `.process/task/task-syncx-group/` | syncx | ✅ 完成 | subtask_group |
-| ds Clone 补全 | `.process/task/task-ds-clone/` | ds | 📋 待实施 | subtask_clone |
+| ds Clone 补全 | `.process/task/task-ds-clone/` | ds | ✅ 完成 | subtask_clone |
 
 设计讨论记录在 `.process/discuss/overview_N/` 中：
 - `overview_0` — errorx + syncx 首批模块设计

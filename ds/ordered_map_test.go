@@ -338,6 +338,94 @@ func TestOrderedMap_DeleteMiddleIntegrity(t *testing.T) {
 	}
 }
 
+func TestOrderedMap_CloneIndependent(t *testing.T) {
+	m := NewOrderedMap[string, int]()
+	m.Set("a", 1)
+	m.Set("b", 2)
+	m.Set("c", 3)
+
+	c := m.Clone()
+	// modify clone: original unchanged
+	c.Set("d", 4)
+	c.Delete("a")
+	if m.Has("d") {
+		t.Fatal("original should not contain d after clone mutation")
+	}
+	if !m.Has("a") {
+		t.Fatal("original should still contain a after clone mutation")
+	}
+
+	// modify original: clone unchanged
+	m.Set("e", 5)
+	m.Delete("b")
+	if c.Has("e") {
+		t.Fatal("clone should not contain e after original mutation")
+	}
+	if !c.Has("b") {
+		t.Fatal("clone should still contain b after original mutation")
+	}
+}
+
+func TestOrderedMap_CloneEmpty(t *testing.T) {
+	m := NewOrderedMap[int, string]()
+	c := m.Clone()
+	if c.Len() != 0 {
+		t.Fatalf("empty clone Len = %d, want 0", c.Len())
+	}
+}
+
+func TestOrderedMap_CloneSingleElement(t *testing.T) {
+	m := NewOrderedMap[int, string]()
+	m.Set(1, "one")
+	c := m.Clone()
+	if c.Len() != 1 {
+		t.Fatalf("clone Len = %d, want 1", c.Len())
+	}
+	v, ok := c.Get(1)
+	if !ok || v != "one" {
+		t.Fatalf("clone Get(1) = %q, %v", v, ok)
+	}
+}
+
+func TestOrderedMap_ClonePreservesOrder(t *testing.T) {
+	m := NewOrderedMap[int, string]()
+	for i, v := range []string{"a", "b", "c", "d", "e"} {
+		m.Set(i, v)
+	}
+	c := m.Clone()
+
+	var origOrder, cloneOrder []string
+	for _, v := range m.All() {
+		origOrder = append(origOrder, v)
+	}
+	for _, v := range c.All() {
+		cloneOrder = append(cloneOrder, v)
+	}
+	if !slices.Equal(origOrder, cloneOrder) {
+		t.Fatalf("clone order = %v, want %v", cloneOrder, origOrder)
+	}
+}
+
+func TestOrderedMap_CloneLargeMap(t *testing.T) {
+	m := NewOrderedMapWithCapacity[int, int](1000)
+	for i := range 1000 {
+		m.Set(i, i*10)
+	}
+	c := m.Clone()
+	if m.Len() != 1000 {
+		t.Fatalf("original Len after Clone = %d, want 1000", m.Len())
+	}
+	if c.Len() != 1000 {
+		t.Fatalf("clone Len = %d, want 1000", c.Len())
+	}
+	for i := range 1000 {
+		v, ok := c.Get(i)
+		if !ok || v != i*10 {
+			t.Fatalf("clone Get(%d) = %d, want %d", i, v, i*10)
+		}
+	}
+}
+
 func TestOrderedMap_NegativeCapacityPanics(t *testing.T) {
 	defer func() {
 		r := recover()

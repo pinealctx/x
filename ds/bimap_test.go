@@ -280,6 +280,109 @@ func TestBiMap_ConcurrentRead(_ *testing.T) {
 	}
 }
 
+func TestBiMap_CloneIndependent(t *testing.T) {
+	m := NewBiMap[string, int]()
+	m.Set("a", 1)
+	m.Set("b", 2)
+	m.Set("c", 3)
+
+	c := m.Clone()
+	// modify clone: original unchanged
+	c.Set("d", 4)
+	c.DeleteByKey("a")
+	if _, ok := m.GetByKey("d"); ok {
+		t.Fatal("original should not contain d after clone mutation")
+	}
+	if _, ok := m.GetByKey("a"); !ok {
+		t.Fatal("original should still contain a after clone mutation")
+	}
+
+	// modify original: clone unchanged
+	m.Set("e", 5)
+	m.DeleteByKey("b")
+	if _, ok := c.GetByKey("e"); ok {
+		t.Fatal("clone should not contain e after original mutation")
+	}
+	if _, ok := c.GetByKey("b"); !ok {
+		t.Fatal("clone should still contain b after original mutation")
+	}
+	checkBiMapInvariant(t, c)
+}
+
+func TestBiMap_CloneEmpty(t *testing.T) {
+	m := NewBiMap[int, string]()
+	c := m.Clone()
+	if c.Len() != 0 {
+		t.Fatalf("empty clone Len = %d, want 0", c.Len())
+	}
+}
+
+func TestBiMap_CloneSingleElement(t *testing.T) {
+	m := NewBiMap[int, string]()
+	m.Set(1, "one")
+	c := m.Clone()
+	if c.Len() != 1 {
+		t.Fatalf("clone Len = %d, want 1", c.Len())
+	}
+	v, ok := c.GetByKey(1)
+	if !ok || v != "one" {
+		t.Fatalf("clone GetByKey(1) = %q, %v", v, ok)
+	}
+	checkBiMapInvariant(t, c)
+}
+
+func TestBiMap_CloneLargeBiMap(t *testing.T) {
+	m := NewBiMap[int, int]()
+	for i := range 500 {
+		m.Set(i, i+10000)
+	}
+	c := m.Clone()
+	if c.Len() != 500 {
+		t.Fatalf("clone Len = %d, want 500", c.Len())
+	}
+	for i := range 500 {
+		v, ok := c.GetByKey(i)
+		if !ok || v != i+10000 {
+			t.Fatalf("clone GetByKey(%d) = %d, want %d", i, v, i+10000)
+		}
+	}
+	checkBiMapInvariant(t, c)
+}
+
+func TestBiMap_ClonePreservesAll(t *testing.T) {
+	m := NewBiMap[string, int]()
+	m.Set("a", 1)
+	m.Set("b", 2)
+	m.Set("c", 3)
+	c := m.Clone()
+
+	origPairs := map[string]int{}
+	for k, v := range m.All() {
+		origPairs[k] = v
+	}
+	clonePairs := map[string]int{}
+	for k, v := range c.All() {
+		clonePairs[k] = v
+	}
+	if len(origPairs) != len(clonePairs) {
+		t.Fatalf("All count: orig=%d, clone=%d", len(origPairs), len(clonePairs))
+	}
+	for k, v := range origPairs {
+		if cv, ok := clonePairs[k]; !ok || cv != v {
+			t.Fatalf("clone All[%q] = %d, want %d", k, cv, v)
+		}
+	}
+}
+
+func TestBiMap_NegativeCapacityPanics(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for negative capacity")
+		}
+	}()
+	NewBiMapWithCapacity[int, int](-1)
+}
+
 func TestBiMap_SystematicConsistency(t *testing.T) {
 	m := NewBiMap[int, string]()
 	// series of mutations

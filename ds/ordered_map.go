@@ -127,6 +127,15 @@ func (m *OrderedMap[K, V]) Keys() []K {
 	return keys
 }
 
+// Clone returns a shallow copy of the map. The insertion order is preserved.
+func (m *OrderedMap[K, V]) Clone() *OrderedMap[K, V] {
+	c := NewOrderedMapWithCapacity[K, V](m.Len())
+	for e := m.root.next; e != &m.root; e = e.next {
+		c.Set(e.key, e.value)
+	}
+	return c
+}
+
 // Values returns all values in insertion order.
 func (m *OrderedMap[K, V]) Values() []V {
 	vals := make([]V, 0, len(m.m))

@@ -189,6 +189,7 @@ func TestSet_ToSliceUnique(t *testing.T) {
 func TestSet_CloneIndependent(t *testing.T) {
 	s := NewSet(1, 2, 3)
 	c := s.Clone()
+	// modify clone: original unchanged
 	c.Add(4)
 	c.Remove(1)
 	if s.Contains(4) {
@@ -196,6 +197,74 @@ func TestSet_CloneIndependent(t *testing.T) {
 	}
 	if !s.Contains(1) {
 		t.Fatal("clone should be independent: original should still contain 1")
+	}
+	// modify original: clone unchanged
+	s.Add(5)
+	s.Remove(2)
+	if c.Contains(5) {
+		t.Fatal("clone should be independent: clone should not contain 5")
+	}
+	if !c.Contains(2) {
+		t.Fatal("clone should be independent: clone should still contain 2")
+	}
+}
+
+func TestSet_CloneEmpty(t *testing.T) {
+	s := NewSet[int]()
+	c := s.Clone()
+	if c.Len() != 0 {
+		t.Fatalf("empty clone Len = %d, want 0", c.Len())
+	}
+}
+
+func TestSet_CloneSingleElement(t *testing.T) {
+	s := NewSet(42)
+	c := s.Clone()
+	if c.Len() != 1 {
+		t.Fatalf("clone Len = %d, want 1", c.Len())
+	}
+	if !c.Contains(42) {
+		t.Fatal("clone should contain 42")
+	}
+}
+
+func TestSet_CloneLarge(t *testing.T) {
+	s := NewSetWithCapacity[int](1000)
+	for i := range 1000 {
+		s.Add(i)
+	}
+	c := s.Clone()
+	if s.Len() != 1000 {
+		t.Fatalf("original Len after Clone = %d, want 1000", s.Len())
+	}
+	if c.Len() != 1000 {
+		t.Fatalf("clone Len = %d, want 1000", c.Len())
+	}
+	for i := range 1000 {
+		if !c.Contains(i) {
+			t.Fatalf("clone should contain %d", i)
+		}
+	}
+}
+
+func TestSet_ClonePreservesAll(t *testing.T) {
+	s := NewSet(10, 20, 30)
+	c := s.Clone()
+	origElems := map[int]bool{}
+	for v := range s.All() {
+		origElems[v] = true
+	}
+	cloneElems := map[int]bool{}
+	for v := range c.All() {
+		cloneElems[v] = true
+	}
+	if len(origElems) != len(cloneElems) {
+		t.Fatalf("All count: orig=%d, clone=%d", len(origElems), len(cloneElems))
+	}
+	for v := range origElems {
+		if !cloneElems[v] {
+			t.Fatalf("clone All missing %d", v)
+		}
 	}
 }
 
