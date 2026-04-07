@@ -63,7 +63,7 @@ func TestSet_Union(t *testing.T) {
 	}
 }
 
-func TestSet_Intersect(t *testing.T) {
+func TestSet_IntersectEqualLen(t *testing.T) {
 	s1 := NewSet(1, 2, 3, 4)
 	s2 := NewSet(3, 4, 5, 6)
 	i := s1.Intersect(s2)
@@ -397,4 +397,37 @@ func TestSet_NegativeCapacityPanics(t *testing.T) {
 		}
 	}()
 	NewSetWithCapacity[int](-1)
+}
+
+func TestSet_IntersectSwapBranch(t *testing.T) {
+	// s1 is larger than s2, triggering the swap branch (small, large = large, small)
+	s1 := NewSet(1, 2, 3, 4, 5)
+	s2 := NewSet(3, 4)
+	i := s1.Intersect(s2)
+	if i.Len() != 2 {
+		t.Fatalf("Intersect Len = %d, want 2", i.Len())
+	}
+	for _, v := range []int{3, 4} {
+		if !i.Contains(v) {
+			t.Fatalf("Intersect should contain %d", v)
+		}
+	}
+}
+
+func TestSet_EqualSameLenDifferentElements(t *testing.T) {
+	// same length but different elements, triggers inner false branch
+	s1 := NewSet(1, 2, 3)
+	s2 := NewSet(1, 2, 4)
+	if s1.Equal(s2) {
+		t.Fatal("{1,2,3} should not equal {1,2,4}")
+	}
+}
+
+func TestSet_IsSubsetSameLenNotSubset(t *testing.T) {
+	// s1.Len() <= s2.Len() but s1 has an element not in s2, triggers inner false branch
+	s1 := NewSet(1, 2, 3)
+	s2 := NewSet(1, 2, 4)
+	if s1.IsSubset(s2) {
+		t.Fatal("{1,2,3} should not be subset of {1,2,4}")
+	}
 }

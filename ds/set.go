@@ -9,6 +9,8 @@ type Set[T comparable] struct {
 }
 
 // NewSet creates a Set initialized with the given values. Duplicates are ignored.
+// Accepting initial values as variadic arguments is intentional — sets are
+// commonly constructed from a known collection of elements.
 func NewSet[T comparable](vals ...T) *Set[T] {
 	s := NewSetWithCapacity[T](len(vals))
 	for _, v := range vals {

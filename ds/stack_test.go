@@ -196,3 +196,26 @@ func TestStack_NegativeCapacityPanics(t *testing.T) {
 	}()
 	NewStackWithCapacity[int](-1)
 }
+
+func TestStack_AllBreak(t *testing.T) {
+	s := NewStack[int]()
+	s.Push(1)
+	s.Push(2)
+	s.Push(3)
+
+	var collected []int
+	for v := range s.All() {
+		collected = append(collected, v)
+		break // triggers yield returning false
+	}
+
+	if len(collected) != 1 {
+		t.Fatalf("expected 1 element after break, got %d", len(collected))
+	}
+	if collected[0] != 3 {
+		t.Fatalf("expected top element 3, got %d", collected[0])
+	}
+	if s.Len() != 3 {
+		t.Fatalf("stack Len should be 3 after All break, got %d", s.Len())
+	}
+}

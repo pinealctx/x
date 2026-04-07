@@ -78,6 +78,8 @@ func Do[T any](ctx context.Context, fn func() (T, error), opts ...Option) (T, er
 		}
 
 		// Check if error is retryable.
+		// If not, return the error as-is: retryx is a transparent pass-through here,
+		// the error belongs to fn() and has not been retried.
 		if cfg.retryIf != nil && !cfg.retryIf(err) {
 			return zero, err
 		}

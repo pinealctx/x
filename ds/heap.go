@@ -5,11 +5,6 @@ import (
 	"iter"
 )
 
-// errNilCompare panics with a clear message when compare is nil.
-func errNilCompare() {
-	panic("ds: Heap requires a non-nil compare function")
-}
-
 // Heap is a binary heap ordered by the compare function.
 // compare(a, b) < 0 means a has higher priority (min-heap default).
 // It is not safe for concurrent use.
@@ -22,7 +17,7 @@ type Heap[T any] struct {
 // Panics if compare is nil.
 func NewHeap[T any](compare func(T, T) int) *Heap[T] {
 	if compare == nil {
-		errNilCompare()
+		panic("ds: Heap requires a non-nil compare function")
 	}
 	return &Heap[T]{compare: compare}
 }
@@ -32,7 +27,7 @@ func NewHeap[T any](compare func(T, T) int) *Heap[T] {
 // Panics if compare is nil.
 func NewHeapFrom[T any](compare func(T, T) int, s []T) *Heap[T] {
 	if compare == nil {
-		errNilCompare()
+		panic("ds: Heap requires a non-nil compare function")
 	}
 	h := &Heap[T]{data: s, compare: compare}
 	h.heapify()
