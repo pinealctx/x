@@ -223,6 +223,9 @@ func TestRingQueue_ConcurrentProdCons(t *testing.T) {
 				t.Errorf("Pop: %v", err)
 				return
 			}
+			if v < 1 || v > 2000 {
+				t.Errorf("consumed out-of-range value: %d", v)
+			}
 			sum.Add(int64(v))
 		}
 	})
@@ -483,6 +486,42 @@ func TestRingQueue_TryPopCloseDrain(t *testing.T) {
 }
 
 // --- No data race ---
+
+func TestRingQueue_PushEvictAfterClose(t *testing.T) {
+	q := syncx.NewRingQueue[int](2)
+	q.Close()
+
+	evicted, ok := q.PushEvict(1)
+	if ok {
+		t.Fatal("PushEvict after Close should return false")
+	}
+	if evicted != 0 {
+		t.Fatalf("PushEvict after Close should return zero, got %d", evicted)
+	}
+}
+
+func TestRingQueue_PopContextCancelWhileEmpty(t *testing.T) {
+	q := syncx.NewRingQueue[int](2)
+
+	cancelCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := q.Pop(cancelCtx)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+}
+
+func TestRingQueue_TryPopAfterCloseNow(t *testing.T) {
+	q := syncx.NewRingQueue[int](2)
+	q.Push(1) // has an element
+	q.CloseNow()
+
+	_, err := q.TryPop()
+	if !errors.Is(err, syncx.ErrQueueClosed) {
+		t.Fatalf("expected ErrQueueClosed after CloseNow, got %v", err)
+	}
+}
 
 func TestRingQueue_NoDataRace(_ *testing.T) {
 	q := syncx.NewRingQueue[int](128)

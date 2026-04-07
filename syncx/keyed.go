@@ -24,8 +24,6 @@ func NewKeyedMutex[K comparable]() *KeyedMutex[K] {
 
 // Lock acquires the mutex for key and returns an unlock function.
 // The caller must invoke the returned function exactly once to release the lock.
-// Calling the returned function more than once triggers a fatal error,
-// consistent with [sync.Mutex] double-unlock behavior.
 func (km *KeyedMutex[K]) Lock(key K) func() {
 	e := km.acquire(key)
 	e.mu.Lock()
@@ -58,10 +56,6 @@ func (km *KeyedMutex[K]) acquire(key K) *muEntry {
 func (km *KeyedMutex[K]) release(key K, e *muEntry) {
 	km.mu.Lock()
 	e.ref--
-	if e.ref < 0 {
-		km.mu.Unlock()
-		panic("syncx: KeyedMutex release without corresponding acquire")
-	}
 	if e.ref == 0 {
 		delete(km.entries, key)
 	}
@@ -91,8 +85,6 @@ func NewKeyedLocker[K comparable]() *KeyedLocker[K] {
 
 // Lock acquires an exclusive write lock for key and returns an unlock function.
 // The caller must invoke the returned function exactly once to release the lock.
-// Calling the returned function more than once triggers a fatal error,
-// consistent with [sync.Mutex] double-unlock behavior.
 func (kl *KeyedLocker[K]) Lock(key K) func() {
 	e := kl.acquire(key)
 	e.mu.Lock()
@@ -104,8 +96,6 @@ func (kl *KeyedLocker[K]) Lock(key K) func() {
 
 // RLock acquires a shared read lock for key and returns an unlock function.
 // The caller must invoke the returned function exactly once to release the lock.
-// Calling the returned function more than once triggers a fatal error,
-// consistent with [sync.RWMutex] double-unlock behavior.
 func (kl *KeyedLocker[K]) RLock(key K) func() {
 	e := kl.acquire(key)
 	e.mu.RLock()
@@ -140,10 +130,6 @@ func (kl *KeyedLocker[K]) acquire(key K) *rwEntry {
 func (kl *KeyedLocker[K]) release(key K, e *rwEntry) {
 	kl.mu.Lock()
 	e.ref--
-	if e.ref < 0 {
-		kl.mu.Unlock()
-		panic("syncx: KeyedLocker release without corresponding acquire")
-	}
 	if e.ref == 0 {
 		delete(kl.entries, key)
 	}

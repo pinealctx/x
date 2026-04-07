@@ -501,6 +501,37 @@ func TestBlockingQueue_CapacityOneWrapAround(t *testing.T) {
 
 // --- No data race ---
 
+func TestBlockingQueue_PushContextCancelWhileFull(t *testing.T) {
+	q := syncx.NewBlockingQueue[int](1)
+	ctx := context.Background()
+
+	// Fill the queue.
+	if err := q.Push(ctx, 1); err != nil {
+		t.Fatal(err)
+	}
+
+	// Cancel context before Push (queue full, should return context error).
+	cancelCtx, cancel := context.WithCancel(ctx)
+	cancel() // cancel immediately
+
+	err := q.Push(cancelCtx, 2)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+}
+
+func TestBlockingQueue_PopContextCancelWhileEmpty(t *testing.T) {
+	q := syncx.NewBlockingQueue[int](1)
+
+	cancelCtx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+
+	_, err := q.Pop(cancelCtx)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+}
+
 func TestBlockingQueue_NoDataRace(_ *testing.T) {
 	q := syncx.NewBlockingQueue[int](64)
 	var wg sync.WaitGroup

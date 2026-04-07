@@ -172,6 +172,22 @@ func TestWaitCond_ContextCancel(t *testing.T) {
 	}
 }
 
+func TestWaitCond_AlreadyCanceled(t *testing.T) {
+	mu := sync.Mutex{}
+	cond := sync.NewCond(&mu)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // already canceled before calling waitCond
+
+	mu.Lock()
+	err := waitCond(ctx, cond)
+	mu.Unlock()
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+}
+
 // --- BlockingQueue additional boundary tests ---
 
 func TestBlockingQueue_CapacityTwoWrapAround(t *testing.T) {

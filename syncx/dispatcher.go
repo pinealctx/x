@@ -120,7 +120,7 @@ func (d *Dispatcher[K, V]) TrySubmit(key K, value V) bool {
 
 // Close signals all slots to stop and waits for pending tasks to complete.
 // Idempotent — calling Close again is a no-op.
-func (d *Dispatcher[K, V]) Close() error {
+func (d *Dispatcher[K, V]) Close() {
 	d.closed.Store(true)
 	for i := range d.slots {
 		d.slots[i].queue.Close()
@@ -128,7 +128,6 @@ func (d *Dispatcher[K, V]) Close() error {
 	for i := range d.slots {
 		<-d.slots[i].done
 	}
-	return nil
 }
 
 // slotIndex returns the slot index for the given key using maphash.

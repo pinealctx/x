@@ -197,8 +197,6 @@ func TestDispatcher_OnError(t *testing.T) {
 		gotKey = k
 		gotVal = v
 		gotErr = err
-		gotVal = v
-		gotErr = err
 	}), WithBuffer[string, int](10))
 
 	if err := d.Submit("good", 1); err != nil {
@@ -273,14 +271,10 @@ func TestDispatcher_GracefulShutdown(t *testing.T) {
 	}
 }
 
-func TestDispatcher_CloseIdempotent(t *testing.T) {
+func TestDispatcher_CloseIdempotent(_ *testing.T) {
 	d := NewDispatcher(2, func(_ string, _ int) error { return nil })
-	if err := d.Close(); err != nil {
-		t.Fatalf("first Close: %v", err)
-	}
-	if err := d.Close(); err != nil {
-		t.Fatalf("second Close: %v", err)
-	}
+	d.Close()
+	d.Close() // second call is a no-op
 }
 
 func TestDispatcher_NewDispatcherPanics(t *testing.T) {
@@ -365,25 +359,13 @@ func TestDispatcher_DefaultConstruction(t *testing.T) {
 }
 
 func TestDispatcher_WithBufferZero(t *testing.T) {
-	var count atomic.Int32
-
-	// WithBuffer(0) should behave like default (capacity 1 handoff).
-	d := NewDispatcher(1, func(_ string, _ int) error {
-		count.Add(1)
-		return nil
-	}, WithBuffer[string, int](0))
-
-	if err := d.Submit("a", 1); err != nil {
-		t.Fatalf("Submit a: %v", err)
-	}
-	if err := d.Submit("b", 2); err != nil {
-		t.Fatalf("Submit b: %v", err)
-	}
-	d.Close()
-
-	if got := count.Load(); got != 2 {
-		t.Fatalf("processed %d tasks, want 2", got)
-	}
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for WithBuffer(0)")
+		}
+	}()
+	NewDispatcher(1, func(_ string, _ int) error { return nil },
+		WithBuffer[string, int](0))
 }
 
 func TestDispatcher_ConcurrentSubmitAndClose(t *testing.T) {
@@ -448,5 +430,19 @@ func TestDispatcher_MultiSlotOnError(t *testing.T) {
 
 	if got := errorCount.Load(); got != 100 {
 		t.Fatalf("OnError called %d times, want 100", got)
+	}
+}
+
+func TestDispatcher_SubmitQueueClosedNonFastPath(t *testing.T) {
+	d := NewDispatcher(1, func(_ string, _ int) error { return nil })
+
+	// Close the underlying queue directly without setting d.closed,
+	// simulating the race window where Submit passes the fast-path check
+	// but the queue is already closed.
+	d.slots[0].queue.Close()
+
+	err := d.Submit("key", 1)
+	if !errors.Is(err, ErrDispatcherClosed) {
+		t.Fatalf("expected ErrDispatcherClosed, got %v", err)
 	}
 }
