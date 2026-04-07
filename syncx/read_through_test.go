@@ -113,7 +113,7 @@ func TestReadThrough_StampedeProtection(t *testing.T) {
 	const n = 20
 	var wg sync.WaitGroup
 	results := make([]int, n)
-	errors := make([]error, n)
+	errs := make([]error, n)
 
 	// Barrier to ensure all goroutines start together.
 	var startWg sync.WaitGroup
@@ -126,7 +126,7 @@ func TestReadThrough_StampedeProtection(t *testing.T) {
 			startWg.Wait() // wait for barrier
 			v, err := rt.Get(context.Background(), "key")
 			results[idx] = v
-			errors[idx] = err
+			errs[idx] = err
 		}(i)
 	}
 
@@ -134,8 +134,8 @@ func TestReadThrough_StampedeProtection(t *testing.T) {
 	wg.Wait()
 
 	for i := range n {
-		if errors[i] != nil {
-			t.Fatalf("goroutine %d: %v", i, errors[i])
+		if errs[i] != nil {
+			t.Fatalf("goroutine %d: %v", i, errs[i])
 		}
 		if results[i] != 77 {
 			t.Fatalf("goroutine %d: expected 77, got %d", i, results[i])
@@ -408,5 +408,72 @@ func TestReadThrough_ZeroValueLoad(t *testing.T) {
 	}
 	if cached != 0 {
 		t.Fatalf("expected cached 0, got %d", cached)
+	}
+}
+
+// TestReadThrough_CtxCancelWhileWaitingForLock documents the known limitation
+// that per-key lock acquisition is not context-aware. A goroutine waiting for
+// the per-key lock will block until the current holder releases it, even if
+// its context is already canceled. Context cancellation only affects the
+// loader call itself.
+func TestReadThrough_CtxCancelWhileWaitingForLock(t *testing.T) {
+	c := newMockCache[string, int]()
+
+	// loaderStarted signals that the first goroutine has acquired the lock
+	// and entered the loader. loaderRelease lets the test control when it exits.
+	loaderStarted := make(chan struct{})
+	loaderRelease := make(chan struct{})
+
+	rt := syncx.NewReadThrough[string, int](c, func(_ context.Context, _ string) (int, error) {
+		close(loaderStarted)
+		<-loaderRelease
+		return 42, nil
+	})
+
+	// First goroutine: acquires the per-key lock and blocks inside the loader.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_, _ = rt.Get(context.Background(), "key")
+	}()
+
+	// Wait until the first goroutine holds the lock.
+	<-loaderStarted
+
+	// Second goroutine: uses an already-canceled context. It will block on the
+	// per-key lock regardless, because lock acquisition ignores context.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+
+	done := make(chan struct{})
+	var secondResult int
+	var secondErr error
+	go func() {
+		defer close(done)
+		secondResult, secondErr = rt.Get(ctx, "key")
+	}()
+
+	// The second goroutine must NOT return before the lock is released,
+	// proving that ctx cancellation does not interrupt lock waiting.
+	select {
+	case <-done:
+		t.Fatal("second goroutine returned before lock was released — unexpected context-aware unlock")
+	case <-time.After(50 * time.Millisecond):
+		// expected: still blocked
+	}
+
+	// Release the loader; both goroutines should now complete.
+	close(loaderRelease)
+	wg.Wait()
+	<-done
+
+	// The second goroutine acquires the lock after the first, finds a cache hit
+	// on double-check, and returns the cached value — ctx cancellation is irrelevant.
+	if secondErr != nil {
+		t.Fatalf("expected nil error, got %v", secondErr)
+	}
+	if secondResult != 42 {
+		t.Fatalf("expected 42, got %d", secondResult)
 	}
 }

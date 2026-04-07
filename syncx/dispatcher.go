@@ -59,6 +59,10 @@ func WithOnError[K comparable, V any](fn func(K, V, error)) DispatcherOption[K, 
 //   - slots: number of worker goroutines (must be >= 1)
 //   - handler: function called for each (key, value) pair in the assigned slot goroutine
 //
+// handler and onError must not panic. A panic in either propagates out of the
+// slot goroutine and crashes the program. Callers that need panic isolation
+// should wrap their own handler with a recover.
+//
 // Panics if slots <= 0 or handler is nil.
 func NewDispatcher[K comparable, V any](slots int, handler func(K, V) error, opts ...DispatcherOption[K, V]) *Dispatcher[K, V] {
 	if slots <= 0 {
