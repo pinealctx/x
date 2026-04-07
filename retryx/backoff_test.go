@@ -226,7 +226,10 @@ func TestComposition_FixedJitterMaxWait(t *testing.T) {
 func TestExponential_LargeAttempt(t *testing.T) {
 	e := NewExponential(time.Millisecond, 2.0)
 	got := e.Wait(62)
-	// 1ms * 2^62 ≈ 4.6e15 ns, well within time.Duration range
+	// 1ms * 2^62 overflows time.Duration (max ~9.2e18 ns); the result is a
+	// large negative value. Do[T] guards with "if wait > 0" so the sleep is
+	// skipped, making the overflow safe. Users should pair large-factor
+	// exponential backoff with WithMaxWait to avoid this.
 	expected := time.Duration(float64(time.Millisecond) * math.Pow(2, 62))
 	if got != expected {
 		t.Errorf("Wait(62) = %s, want %s", got, expected)
