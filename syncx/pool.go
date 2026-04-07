@@ -39,6 +39,8 @@ func NewPool[T any](create func() T, reset ...func(T)) *Pool[T] {
 }
 
 // Get retrieves an object from the pool, calling create if the pool is empty.
+// The returned object may have been previously used; callers must initialize
+// or reset the object before use if its fields must be in a known state.
 func (p *Pool[T]) Get() T {
 	// Safe by construction: only Put(T) and create() populate the pool,
 	// so the type assertion can never fail.

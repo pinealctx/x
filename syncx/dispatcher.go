@@ -33,16 +33,17 @@ type Dispatcher[K comparable, V any] struct {
 // DispatcherOption configures a Dispatcher.
 type DispatcherOption[K comparable, V any] func(*Dispatcher[K, V])
 
-// WithBuffer sets the per-slot queue capacity. The default capacity is 1 (handoff semantics:
-// Push blocks until the slot goroutine takes the item).
-// WithBuffer(0) is equivalent to the default (capacity 1).
-// Panics if n < 0.
+// WithBuffer sets the per-slot queue capacity (must be >= 1).
+// The default capacity is 1 (handoff semantics: Submit blocks until
+// the slot goroutine takes the item). Use WithBuffer to increase
+// the buffer size beyond the default.
+// Panics if n < 1.
 func WithBuffer[K comparable, V any](n int) DispatcherOption[K, V] {
-	if n < 0 {
-		panic("syncx: WithBuffer must be >= 0")
+	if n < 1 {
+		panic("syncx: WithBuffer requires n >= 1")
 	}
 	return func(d *Dispatcher[K, V]) {
-		d.buffer = max(1, n) // minimum 1: BlockingQueue requires capacity >= 1
+		d.buffer = n
 	}
 }
 
@@ -118,6 +119,7 @@ func (d *Dispatcher[K, V]) TrySubmit(key K, value V) bool {
 }
 
 // Close signals all slots to stop and waits for pending tasks to complete.
+// Idempotent — calling Close again is a no-op.
 func (d *Dispatcher[K, V]) Close() error {
 	d.closed.Store(true)
 	for i := range d.slots {

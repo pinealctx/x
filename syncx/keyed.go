@@ -135,6 +135,8 @@ func (kl *KeyedLocker[K]) acquire(key K) *rwEntry {
 	return e
 }
 
+// release is identical in logic to KeyedMutex.release.
+// Cannot be unified due to Go generics not supporting struct field constraints.
 func (kl *KeyedLocker[K]) release(key K, e *rwEntry) {
 	kl.mu.Lock()
 	e.ref--

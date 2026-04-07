@@ -5,17 +5,19 @@ import "github.com/pinealctx/x/errorx"
 // syncxTag is a phantom type used for domain-isolated sentinel errors in the syncx package.
 type syncxTag struct{}
 
-// SyncError is the base sentinel error type for the syncx package.
-type SyncError = errorx.Sentinel[syncxTag]
+// Error is the sentinel error type for the syncx package.
+// It can be used by callers to define additional syncx-domain errors
+// that are distinguishable from errors in other packages.
+type Error = errorx.Sentinel[syncxTag]
 
 // Queue sentinel errors.
 var (
-	ErrQueueClosed = SyncError("syncx.queue.closed")
-	ErrQueueFull   = SyncError("syncx.queue.full")
-	ErrQueueEmpty  = SyncError("syncx.queue.empty")
+	ErrQueueClosed = Error("syncx.queue.closed")
+	ErrQueueFull   = Error("syncx.queue.full")
+	ErrQueueEmpty  = Error("syncx.queue.empty")
 )
 
 // Dispatcher sentinel errors.
 var (
-	ErrDispatcherClosed = SyncError("syncx.dispatcher.closed")
+	ErrDispatcherClosed = Error("syncx.dispatcher.closed")
 )
