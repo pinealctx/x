@@ -6,7 +6,9 @@ import (
 )
 
 // ErrCodeConstraint constrains error code types to int-based types.
-// Convention: reserve code value 0 as "unset/default"; start iota at 1.
+// Convention: reserve code value 0 as "unset/default" and start iota at 1.
+// This keeps the zero value of any Code type semantically safe — an
+// uninitialized Error[Code] will not accidentally carry a meaningful code.
 type ErrCodeConstraint interface {
 	~int
 }
@@ -68,13 +70,16 @@ func IsCode[Code ErrCodeConstraint](err error, code Code) bool {
 	return ae.Code == code
 }
 
+// maxContainsDepth is the maximum chain depth ContainsCode will traverse.
+// It prevents infinite loops in pathological error chains.
+const maxContainsDepth = 32
+
 // ContainsCode reports whether any Error with the same Code type
 // anywhere in the chain has the specified code value.
 // Unlike IsCode which checks only the outermost match, ContainsCode
 // searches the entire chain by stepping through each matched Error's Cause.
 func ContainsCode[Code ErrCodeConstraint](err error, code Code) bool {
-	const maxDepth = 32
-	for i := 0; i < maxDepth && err != nil; i++ {
+	for i := 0; i < maxContainsDepth && err != nil; i++ {
 		var ae *Error[Code]
 		if !errors.As(err, &ae) {
 			return false
