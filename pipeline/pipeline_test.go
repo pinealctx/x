@@ -90,9 +90,13 @@ func TestThen_ErrorWrapsLabel(t *testing.T) {
 	sentinel := errors.New("oops")
 	s := &testState{}
 	err := New[testState]().Then("my-step", failStep("x", sentinel)).Run(context.Background(), s)
-	// Then does NOT wrap — the raw fn error is returned directly.
+	// Then wraps the error with the stage label.
 	if !errors.Is(err, sentinel) {
-		t.Fatalf("expected sentinel, got %v", err)
+		t.Fatalf("expected sentinel in chain, got %v", err)
+	}
+	want := fmt.Sprintf("pipeline stage %q:", "my-step")
+	if len(err.Error()) < len(want) || err.Error()[:len(want)] != want {
+		t.Fatalf("label not in error: %v", err)
 	}
 }
 
@@ -418,5 +422,34 @@ func TestRace_ConcurrentStateWriteDifferentFields(t *testing.T) {
 	err := New[twoField]().Race("r", setA, setB).Run(context.Background(), s)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestParallel_PanicRecovered(t *testing.T) {
+	s := &testState{}
+	err := New[testState]().Parallel("p",
+		func(_ context.Context, _ *testState) error { panic("boom") },
+		func(_ context.Context, _ *testState) error { return nil },
+	).Run(context.Background(), s)
+	// The panic should be recovered and treated as an error.
+	if err == nil {
+		t.Fatal("expected error from panicked parallel fn")
+	}
+	if !errors.Is(err, ErrParallelPanic) {
+		t.Fatalf("expected ErrParallelPanic in chain, got: %v", err)
+	}
+}
+
+func TestParallel_AllPanic(t *testing.T) {
+	s := &testState{}
+	err := New[testState]().Parallel("p",
+		func(_ context.Context, _ *testState) error { panic("a") },
+		func(_ context.Context, _ *testState) error { panic("b") },
+	).Run(context.Background(), s)
+	if err == nil {
+		t.Fatal("expected error when all parallel fns panic")
+	}
+	if !errors.Is(err, ErrParallelPanic) {
+		t.Fatalf("expected ErrParallelPanic in chain, got: %v", err)
 	}
 }

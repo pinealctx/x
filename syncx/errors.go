@@ -21,3 +21,10 @@ var (
 var (
 	ErrDispatcherClosed = Error("syncx.dispatcher.closed")
 )
+
+// Race sentinel errors.
+var (
+	// ErrRacePanic is returned by Race when a fn panics.
+	// Callers can detect a recovered panic with errors.Is(err, ErrRacePanic).
+	ErrRacePanic = Error("syncx.race.panic")
+)

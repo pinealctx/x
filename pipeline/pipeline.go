@@ -35,11 +35,16 @@ func New[S any]() *Pipeline[S] {
 }
 
 // Then appends a sequential step. The step runs after all previous stages
-// complete successfully. Errors from Then steps are returned unwrapped.
+// complete successfully. Errors are wrapped with the stage label.
 func (p *Pipeline[S]) Then(label string, fn StepFunc[S]) *Pipeline[S] {
 	p.stages = append(p.stages, stage[S]{
 		label: label,
-		run:   fn,
+		run: func(ctx context.Context, state *S) error {
+			if err := fn(ctx, state); err != nil {
+				return fmt.Errorf("pipeline stage %q: %w", label, err)
+			}
+			return nil
+		},
 	})
 	return p
 }
@@ -108,10 +113,19 @@ func parallelRun[S any](label string, fns []StepFunc[S]) func(context.Context, *
 		for _, fn := range fns {
 			go func() {
 				defer wg.Done()
-				if err := fn(ctx, state); err != nil {
+				var fnErr error
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							fnErr = fmt.Errorf("%w: %v", ErrParallelPanic, r)
+						}
+					}()
+					fnErr = fn(ctx, state)
+				}()
+				if fnErr != nil {
 					mu.Lock()
 					if firstErr == nil {
-						firstErr = err
+						firstErr = fnErr
 						cancel() // signal remaining fns
 					}
 					mu.Unlock()

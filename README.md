@@ -15,6 +15,8 @@ Requires Go 1.26+.
 - [ds](#ds) — generic data structures
 - [retryx](#retryx) — retry with composable backoff
 - [ctxv](#ctxv) — type-safe context values
+- [handlerx](#handlerx) — generic middleware chain for RPC handlers
+- [pipeline](#pipeline) — declarative step-execution graph
 
 ---
 
@@ -136,8 +138,8 @@ Deduplicates concurrent calls for the same key.
 
 ```go
 sf := syncx.NewSingleFlight[string, *Data]()
-result, err, shared := sf.Do(ctx, "key", func(ctx context.Context) (*Data, error) {
-    return fetchData(ctx)
+result, shared, err := sf.Do("key", func() (*Data, error) {
+    return fetchData()
 })
 ```
 
@@ -146,10 +148,21 @@ result, err, shared := sf.Do(ctx, "key", func(ctx context.Context) (*Data, error
 Collects results from concurrent goroutines in submission order.
 
 ```go
-g := syncx.NewGroup[int]()
+g := syncx.NewGroup[int](0)
 g.Go(func() (int, error) { return compute1() })
 g.Go(func() (int, error) { return compute2() })
 results := g.Wait() // []Result[int] in submission order
+```
+
+### Race
+
+Returns the first successful result; if all fail, returns the last error.
+
+```go
+val, err := syncx.Race(ctx,
+    func(ctx context.Context) (string, error) { return fetchFromPrimary(ctx) },
+    func(ctx context.Context) (string, error) { return fetchFromFallback(ctx) },
+)
 ```
 
 ---
@@ -192,9 +205,9 @@ Bidirectional O(1) lookup.
 
 ```go
 m := ds.NewBiMap[string, int]()
-m.Put("one", 1)
-m.GetByKey("one") // 1, true
-m.GetByVal(1)     // "one", true
+m.Set("one", 1)
+m.GetByKey("one")  // 1, true
+m.GetByValue(1)    // "one", true
 ```
 
 ### Stack
@@ -260,6 +273,51 @@ ctx = requestIDKey.WithValue(ctx, "req-123")
 // retrieve
 id, ok := requestIDKey.Value(ctx)       // "req-123", true
 id   := requestIDKey.MustValue(ctx)     // panics if missing
+```
+
+---
+
+## handlerx
+
+Framework-agnostic generic middleware chain for RPC handlers.
+
+```go
+// Define handler and interceptors
+h := func(ctx context.Context, req MyRequest) (MyResponse, error) {
+    return MyResponse{Result: "ok"}, nil
+}
+
+// Chain interceptors (outermost first)
+h = handlerx.Chain(h,
+    handlerx.WithTimeout[MyRequest, MyResponse](5*time.Second),
+    handlerx.WithRecovery[MyRequest, MyResponse](),
+)
+
+// Execute
+resp, err := h(ctx, req)
+```
+
+---
+
+## pipeline
+
+Declarative step-execution graph: sequential (Then), concurrent all-must-succeed (Parallel), and concurrent first-success (Race).
+
+```go
+type state struct {
+    Req  *Request
+    Data *Data
+}
+
+err := pipeline.New[state]().
+    Then("validate", func(ctx context.Context, s *state) error {
+        return validate(s.Req)
+    }).
+    Parallel("fetch", fetchA, fetchB).
+    Then("save", func(ctx context.Context, s *state) error {
+        return save(ctx, s.Data)
+    }).
+    Run(ctx, &state{Req: req})
 ```
 
 ---

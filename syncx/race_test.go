@@ -280,3 +280,32 @@ func TestRace_SuccessWithZeroValue(t *testing.T) {
 		t.Fatalf("got %d, want 0", val)
 	}
 }
+
+func TestRace_PanicRecovered(t *testing.T) {
+	// Panicking fn should be recovered and treated as an error, not crash the process.
+	_, err := Race(context.Background(),
+		func(_ context.Context) (int, error) {
+			panic("boom")
+		},
+		func(_ context.Context) (int, error) {
+			return 1, nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("expected success from second fn, got error: %v", err)
+	}
+}
+
+func TestRace_AllPanic(t *testing.T) {
+	// All fns panic: the last panic (scheduling order) is reported as the error.
+	_, err := Race(context.Background(),
+		func(_ context.Context) (int, error) { panic("a") },
+		func(_ context.Context) (int, error) { panic("b") },
+	)
+	if err == nil {
+		t.Fatal("expected error when all fns panic")
+	}
+	if !errors.Is(err, ErrRacePanic) {
+		t.Fatalf("expected ErrRacePanic, got: %v", err)
+	}
+}

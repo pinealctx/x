@@ -2,6 +2,7 @@ package syncx
 
 import (
 	"context"
+	"fmt"
 	"sync"
 )
 
@@ -34,7 +35,16 @@ func Race[T any](ctx context.Context, fns ...func(ctx context.Context) (T, error
 	for _, fn := range fns {
 		go func() {
 			defer wg.Done()
-			val, err := fn(ctx)
+			var val T
+			var err error
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						err = fmt.Errorf("%w: %v", ErrRacePanic, r)
+					}
+				}()
+				val, err = fn(ctx)
+			}()
 			if err == nil {
 				once.Do(func() {
 					succeeded = true
