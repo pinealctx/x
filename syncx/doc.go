@@ -18,5 +18,6 @@
 // Concurrency patterns: Dispatcher[K,V] routes keyed work to fixed
 // goroutine slots by hash. SingleFlight[K,V] deduplicates concurrent calls
 // for the same key. Group[T] collects results from multiple goroutines in
-// submission order with panic recovery.
+// submission order with panic recovery. Race[T] returns the first successful
+// result from concurrent functions; if all fail, returns the last error.
 package syncx
