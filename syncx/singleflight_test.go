@@ -2,11 +2,12 @@ package syncx
 
 import (
 	"errors"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/pinealctx/x/panicx"
 )
 
 func TestSingleFlight_BasicDo(t *testing.T) {
@@ -306,8 +307,8 @@ func TestSingleFlight_PanicRecovery(t *testing.T) {
 		if e == nil {
 			t.Fatalf("goroutine %d: expected error, got nil", i)
 		}
-		if !strings.Contains(e.Error(), "boom") {
-			t.Errorf("goroutine %d: error %q should contain 'boom'", i, e.Error())
+		if !errors.Is(e, panicx.ErrPanic) {
+			t.Errorf("goroutine %d: expected panicx.ErrPanic, got: %v", i, e)
 		}
 	}
 }

@@ -1,8 +1,9 @@
 package syncx
 
 import (
-	"fmt"
 	"sync"
+
+	"github.com/pinealctx/x/panicx"
 )
 
 // sfCall represents an in-flight or completed SingleFlight call.
@@ -46,7 +47,7 @@ func (sf *SingleFlight[K, V]) Do(key K, fn func() (V, error)) (v V, shared bool,
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				c.err = fmt.Errorf("syncx: singleflight panic for key %v: %v", key, r)
+				c.err = panicx.NewPanicError(r)
 			}
 			c.wg.Done()
 		}()

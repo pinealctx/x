@@ -39,7 +39,11 @@ func NewExponential(base time.Duration, factor float64) BackoffStrategy {
 
 func (e *exponentialBackoff) Wait(attempt int) time.Duration {
 	mult := math.Pow(e.factor, float64(attempt))
-	return time.Duration(float64(e.base) * mult)
+	d := float64(e.base) * mult
+	if d > float64(math.MaxInt64) {
+		return time.Duration(math.MaxInt64)
+	}
+	return time.Duration(d)
 }
 
 // fixedBackoff returns a constant interval.

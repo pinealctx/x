@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/pinealctx/x/panicx"
 )
 
 func TestGroup_SingleGo(t *testing.T) {
@@ -190,8 +192,8 @@ func TestGroup_PanicRecovery(t *testing.T) {
 	if results[0].Err == nil {
 		t.Fatal("first result should have error from panic")
 	}
-	if !strings.Contains(results[0].Err.Error(), "boom") {
-		t.Errorf("error %q should contain 'boom'", results[0].Err.Error())
+	if !errors.Is(results[0].Err, panicx.ErrPanic) {
+		t.Errorf("expected panicx.ErrPanic, got: %v", results[0].Err)
 	}
 	if results[1].Value != 42 {
 		t.Errorf("second result: got %d, want 42", results[1].Value)
@@ -411,9 +413,8 @@ func TestGroup_StressPanicWithLimit(t *testing.T) {
 		if i%3 == 0 {
 			if r.Err == nil {
 				t.Errorf("results[%d]: expected error from panic", i)
-			}
-			if !strings.Contains(r.Err.Error(), "stress panic") {
-				t.Errorf("results[%d]: error %q should contain 'stress panic'", i, r.Err.Error())
+			} else if !errors.Is(r.Err, panicx.ErrPanic) {
+				t.Errorf("results[%d]: expected panicx.ErrPanic, got: %v", i, r.Err)
 			}
 		} else {
 			if r.Value != i {

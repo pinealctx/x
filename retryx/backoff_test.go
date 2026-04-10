@@ -137,6 +137,12 @@ func TestJitter_PanicOnNegativeRatio(t *testing.T) {
 	})
 }
 
+func TestJitter_PanicOnRatioAboveOne(t *testing.T) {
+	assertPanic(t, "requires ratio in (0, 1)", func() {
+		WithJitter(NewFixed(time.Second), 1.5)
+	})
+}
+
 func TestJitter_SmallRatio(t *testing.T) {
 	inner := NewFixed(time.Second)
 	j := WithJitter(inner, 0.01)
@@ -171,6 +177,16 @@ func TestMaxWait_Truncates(t *testing.T) {
 		if got != tt.expected {
 			t.Errorf("Wait(%d) = %s, want %s", tt.attempt, got, tt.expected)
 		}
+	}
+}
+
+func TestMaxWait_ExactBoundary(t *testing.T) {
+	// attempt=2: 1s * 2^2 = 4s, max=4s → w == max, should return 4s (not truncated).
+	e := NewExponential(time.Second, 2.0)
+	m := WithMaxWait(e, 4*time.Second)
+	got := m.Wait(2)
+	if got != 4*time.Second {
+		t.Errorf("Wait(2) = %s, want 4s (w == max, no truncation)", got)
 	}
 }
 
@@ -226,13 +242,10 @@ func TestComposition_FixedJitterMaxWait(t *testing.T) {
 func TestExponential_LargeAttempt(t *testing.T) {
 	e := NewExponential(time.Millisecond, 2.0)
 	got := e.Wait(62)
-	// 1ms * 2^62 overflows time.Duration (max ~9.2e18 ns); the result is a
-	// large negative value. Do[T] guards with "if wait > 0" so the sleep is
-	// skipped, making the overflow safe. Users should pair large-factor
-	// exponential backoff with WithMaxWait to avoid this.
-	expected := time.Duration(float64(time.Millisecond) * math.Pow(2, 62))
-	if got != expected {
-		t.Errorf("Wait(62) = %s, want %s", got, expected)
+	// 1ms * 2^62 overflows time.Duration (max ~9.2e18 ns);
+	// Wait caps the result at math.MaxInt64 instead of wrapping negative.
+	if got != time.Duration(math.MaxInt64) {
+		t.Errorf("Wait(62) = %s, want %s (MaxInt64)", got, time.Duration(math.MaxInt64))
 	}
 }
 
