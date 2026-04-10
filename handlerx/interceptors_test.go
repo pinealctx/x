@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pinealctx/x/handlerx"
+	"github.com/pinealctx/x/panicx"
 )
 
 // --- WithTimeout ---
@@ -89,7 +90,7 @@ func TestWithRecovery_PanicReturnsZeroResp(t *testing.T) {
 
 	h := handlerx.Chain(panicker, handlerx.WithRecovery[string, string]())
 	resp, err := h(context.Background(), "x")
-	if !errors.Is(err, handlerx.ErrPanicRecovered) {
+	if !errors.Is(err, panicx.ErrPanic) {
 		t.Fatalf("got %v, want ErrPanicRecovered", err)
 	}
 	if resp != "" {
@@ -140,7 +141,7 @@ func TestWithRecovery_CatchesPanic(t *testing.T) {
 
 	h := handlerx.Chain(panicker, handlerx.WithRecovery[string, string]())
 	_, err := h(context.Background(), "x")
-	if !errors.Is(err, handlerx.ErrPanicRecovered) {
+	if !errors.Is(err, panicx.ErrPanic) {
 		t.Fatalf("got %v, want ErrPanicRecovered", err)
 	}
 }
@@ -152,7 +153,7 @@ func TestWithRecovery_CatchesPanicValue(t *testing.T) {
 
 	h := handlerx.Chain(panicker, handlerx.WithRecovery[string, string]())
 	_, err := h(context.Background(), "x")
-	if !errors.Is(err, handlerx.ErrPanicRecovered) {
+	if !errors.Is(err, panicx.ErrPanic) {
 		t.Fatalf("got %v, want ErrPanicRecovered", err)
 	}
 }
@@ -165,7 +166,7 @@ func TestWithRecovery_CatchesPanicNil(t *testing.T) {
 
 	h := handlerx.Chain(panicker, handlerx.WithRecovery[string, string]())
 	_, err := h(context.Background(), "x")
-	if !errors.Is(err, handlerx.ErrPanicRecovered) {
+	if !errors.Is(err, panicx.ErrPanic) {
 		t.Fatalf("got %v, want ErrPanicRecovered", err)
 	}
 }
@@ -193,7 +194,7 @@ func TestChain_TimeoutOuterRecoveryInner(t *testing.T) {
 		handlerx.WithRecovery[string, string](),
 	)
 	_, err := h(context.Background(), "x")
-	if !errors.Is(err, handlerx.ErrPanicRecovered) {
+	if !errors.Is(err, panicx.ErrPanic) {
 		t.Fatalf("got %v, want ErrPanicRecovered", err)
 	}
 }
@@ -210,7 +211,7 @@ func TestChain_RecoveryOuterTimeoutInner(t *testing.T) {
 		handlerx.WithTimeout[string, string](100*time.Millisecond),
 	)
 	_, err := h(context.Background(), "x")
-	if !errors.Is(err, handlerx.ErrPanicRecovered) {
+	if !errors.Is(err, panicx.ErrPanic) {
 		t.Fatalf("got %v, want ErrPanicRecovered", err)
 	}
 }

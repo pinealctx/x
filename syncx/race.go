@@ -2,8 +2,9 @@ package syncx
 
 import (
 	"context"
-	"fmt"
 	"sync"
+
+	"github.com/pinealctx/x/panicx"
 )
 
 // Race runs fns concurrently and returns the first successful result.
@@ -35,16 +36,14 @@ func Race[T any](ctx context.Context, fns ...func(ctx context.Context) (T, error
 	for _, fn := range fns {
 		go func() {
 			defer wg.Done()
-			var val T
-			var err error
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						err = fmt.Errorf("%w: %v", ErrRacePanic, r)
-					}
-				}()
-				val, err = fn(ctx)
+			defer func() {
+				if r := recover(); r != nil {
+					mu.Lock()
+					lastErr = panicx.NewPanicError(r)
+					mu.Unlock()
+				}
 			}()
+			val, err := fn(ctx)
 			if err == nil {
 				once.Do(func() {
 					succeeded = true

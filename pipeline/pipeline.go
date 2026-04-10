@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/pinealctx/x/panicx"
 	"github.com/pinealctx/x/syncx"
 )
 
@@ -109,26 +110,26 @@ func parallelRun[S any](label string, fns []StepFunc[S]) func(context.Context, *
 			firstErr error
 		)
 
+		setFirstErr := func(err error) {
+			mu.Lock()
+			if firstErr == nil {
+				firstErr = err
+				cancel()
+			}
+			mu.Unlock()
+		}
+
 		wg.Add(len(fns))
 		for _, fn := range fns {
 			go func() {
 				defer wg.Done()
-				var fnErr error
-				func() {
-					defer func() {
-						if r := recover(); r != nil {
-							fnErr = fmt.Errorf("%w: %v", ErrParallelPanic, r)
-						}
-					}()
-					fnErr = fn(ctx, state)
-				}()
-				if fnErr != nil {
-					mu.Lock()
-					if firstErr == nil {
-						firstErr = fnErr
-						cancel() // signal remaining fns
+				defer func() {
+					if r := recover(); r != nil {
+						setFirstErr(panicx.NewPanicError(r))
 					}
-					mu.Unlock()
+				}()
+				if err := fn(ctx, state); err != nil {
+					setFirstErr(err)
 				}
 			}()
 		}

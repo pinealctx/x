@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/pinealctx/x/panicx"
 )
 
 // --- helpers ---
@@ -435,8 +437,8 @@ func TestParallel_PanicRecovered(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error from panicked parallel fn")
 	}
-	if !errors.Is(err, ErrParallelPanic) {
-		t.Fatalf("expected ErrParallelPanic in chain, got: %v", err)
+	if !errors.Is(err, panicx.ErrPanic) {
+		t.Fatalf("expected panicx.ErrPanic in chain, got: %v", err)
 	}
 }
 
@@ -449,7 +451,7 @@ func TestParallel_AllPanic(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error when all parallel fns panic")
 	}
-	if !errors.Is(err, ErrParallelPanic) {
-		t.Fatalf("expected ErrParallelPanic in chain, got: %v", err)
+	if !errors.Is(err, panicx.ErrPanic) {
+		t.Fatalf("expected panicx.ErrPanic in chain, got: %v", err)
 	}
 }

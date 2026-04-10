@@ -6,6 +6,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/pinealctx/x/panicx"
 )
 
 func TestRace_Empty(t *testing.T) {
@@ -305,7 +307,7 @@ func TestRace_AllPanic(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error when all fns panic")
 	}
-	if !errors.Is(err, ErrRacePanic) {
-		t.Fatalf("expected ErrRacePanic, got: %v", err)
+	if !errors.Is(err, panicx.ErrPanic) {
+		t.Fatalf("expected panicx.ErrPanic, got: %v", err)
 	}
 }
