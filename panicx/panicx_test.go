@@ -201,17 +201,24 @@ func TestStack_CachedResult(t *testing.T) {
 	}
 }
 
-func TestStack_ConcurrentSafe(_ *testing.T) {
+func TestStack_ConcurrentSafe(t *testing.T) {
 	pe := mustCapture(func() { panic("concurrent") })
 	var wg sync.WaitGroup
-	for range 20 {
+	results := make([][]string, 20)
+	for i := range 20 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_ = pe.Stack()
+			results[i] = pe.Stack()
 		}()
 	}
 	wg.Wait()
+	// All goroutines must see the same non-empty stack.
+	for i, s := range results {
+		if len(s) == 0 {
+			t.Errorf("goroutine %d: got empty stack", i)
+		}
+	}
 }
 
 // --- NewPanicErrorSkip ---

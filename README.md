@@ -114,7 +114,7 @@ Type-safe wrapper around `sync.Pool`.
 
 ```go
 p := syncx.NewPool(func() *bytes.Buffer { return new(bytes.Buffer) },
-    syncx.WithReset(func(b *bytes.Buffer) { b.Reset() }))
+    func(b *bytes.Buffer) { b.Reset() })
 
 buf := p.Get()
 defer p.Put(buf)
@@ -125,11 +125,12 @@ defer p.Put(buf)
 Routes keyed work to a fixed set of goroutines by hash — preserves per-key ordering.
 
 ```go
-d := syncx.NewDispatcher[string, int](8, func(ctx context.Context, key string, val int) {
+d := syncx.NewDispatcher[string, int](8, func(key string, val int) error {
     // always called on the same goroutine for the same key
+    return nil
 })
-d.Start(ctx)
-d.Dispatch("user:42", 1)
+defer d.Close()
+d.Submit("user:42", 1)
 ```
 
 ### SingleFlight
@@ -179,10 +180,9 @@ Insertion-ordered map with O(1) access and zero-allocation iteration.
 m := ds.NewOrderedMap[string, int]()
 m.Set("a", 1)
 m.Set("b", 2)
-m.Range(func(k string, v int) bool {
+for k, v := range m.All() {
     fmt.Println(k, v) // a 1, b 2 — insertion order
-    return true
-})
+}
 ```
 
 ### Set
@@ -193,10 +193,10 @@ Set algebra and relation checks.
 a := ds.NewSet("a", "b", "c")
 b := ds.NewSet("b", "c", "d")
 
-a.Union(b)        // {a, b, c, d}
-a.Intersection(b) // {b, c}
-a.Difference(b)   // {a}
-a.IsSubset(b)     // false
+a.Union(b)       // {a, b, c, d}
+a.Intersect(b)   // {b, c}
+a.Difference(b)  // {a}
+a.IsSubset(b)    // false
 ```
 
 ### BiMap

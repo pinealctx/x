@@ -1,8 +1,9 @@
 package syncx
 
 import (
-	"fmt"
 	"sync"
+
+	"github.com/pinealctx/x/panicx"
 )
 
 // Result holds the outcome of a single goroutine spawned by [Group].
@@ -55,7 +56,7 @@ func (g *Group[T]) Go(fn func() (T, error)) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				slot.Err = fmt.Errorf("syncx: group panic: %v", r)
+				slot.Err = panicx.NewPanicError(r)
 			}
 			if g.sem != nil {
 				<-g.sem
