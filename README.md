@@ -1,6 +1,6 @@
 # x
 
-Generic extension libraries for Go. Zero external dependencies, generics-driven.
+Generic extension libraries for Go. Minimal external dependencies, generics-driven.
 
 ```
 go get github.com/pinealctx/x
@@ -239,7 +239,7 @@ a.Difference(b)  // {a}
 a.IsSubset(b)    // false
 ```
 
-Also: `NewSetWithCapacity`, `Add`, `Remove`, `Contains`, `SymmetricDifference`, `Equal`, `IsSuperset`, `ToSlice`, `Clone`, `Len`, `Clear`.
+Also: `NewSetWithCapacity`, `Add`, `Remove`, `Has`, `SymmetricDifference`, `Equal`, `IsSuperset`, `ToSlice`, `Clone`, `Len`, `Clear`.
 
 ### BiMap
 
@@ -280,6 +280,31 @@ v, _ := h.Pop() // 1 (min)
 ```
 
 Also: `NewHeapFrom` (initialize from slice), `Peek`, `Drain` (pop-all iterator), `Clone`, `Len`, `Clear`.
+
+### SortedMap
+
+Ordered map combining O(1) key lookup with O(log n) sorted iteration. Backed by `tidwall/btree`.
+
+```go
+type Item struct {
+    ID    int
+    Score float64
+}
+
+m := ds.NewSortedMap[int, Item](
+    func(v Item) int { return v.ID },    // key extraction
+    func(a, b Item) bool { return a.Score < b.Score }, // sort order
+)
+m.Set(Item{ID: 1, Score: 3.0})
+m.Set(Item{ID: 2, Score: 1.0})
+m.Set(Item{ID: 3, Score: 2.0})
+
+for v := range m.Ascend() {
+    fmt.Println(v.ID, v.Score) // 2 1.0, 3 2.0, 1 3.0
+}
+```
+
+Also: `Get`, `Has`, `Delete`, `AscendFrom`, `AscendAfter`, `Descend`, `DescendFrom`, `DescendBefore`, `Len`, `Clear`.
 
 ---
 

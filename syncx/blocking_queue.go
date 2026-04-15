@@ -20,7 +20,7 @@ type BlockingQueue[T any] struct {
 // Panics if capacity < 1.
 func NewBlockingQueue[T any](capacity int) *BlockingQueue[T] {
 	if capacity < 1 {
-		panic("syncx: BlockingQueue capacity must be >= 1")
+		panic("syncx: NewBlockingQueue: capacity must be >= 1")
 	}
 	q := &BlockingQueue[T]{
 		ring: newRingBuf[T](capacity),

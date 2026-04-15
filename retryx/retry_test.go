@@ -268,13 +268,13 @@ func TestDo_Concurrent(t *testing.T) {
 }
 
 func TestAttempts_PanicOnZero(t *testing.T) {
-	assertPanic(t, "requires n > 0", func() {
+	assertPanic(t, "n must be > 0", func() {
 		_, _ = Do(context.Background(), func() (int, error) { return 0, nil }, Attempts(0))
 	})
 }
 
 func TestAttempts_PanicOnNegative(t *testing.T) {
-	assertPanic(t, "requires n > 0", func() {
+	assertPanic(t, "n must be > 0", func() {
 		_, _ = Do(context.Background(), func() (int, error) { return 0, nil }, Attempts(-1))
 	})
 }

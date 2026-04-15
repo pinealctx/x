@@ -37,10 +37,10 @@ func NewReadThrough[K comparable, V any](
 	loader func(ctx context.Context, key K) (V, error),
 ) *ReadThrough[K, V] {
 	if c == nil {
-		panic("syncx: ReadThrough requires a non-nil Cache")
+		panic("syncx: NewReadThrough: cache must not be nil")
 	}
 	if loader == nil {
-		panic("syncx: ReadThrough requires a non-nil loader")
+		panic("syncx: NewReadThrough: loader must not be nil")
 	}
 	return &ReadThrough[K, V]{
 		cache:  c,

@@ -40,7 +40,7 @@ type DispatcherOption[K comparable, V any] func(*Dispatcher[K, V])
 // Panics if n < 1.
 func WithBuffer[K comparable, V any](n int) DispatcherOption[K, V] {
 	if n < 1 {
-		panic("syncx: WithBuffer requires n >= 1")
+		panic("syncx: WithBuffer: n must be >= 1")
 	}
 	return func(d *Dispatcher[K, V]) {
 		d.buffer = n
@@ -66,10 +66,10 @@ func WithOnError[K comparable, V any](fn func(K, V, error)) DispatcherOption[K, 
 // Panics if slots <= 0 or handler is nil.
 func NewDispatcher[K comparable, V any](slots int, handler func(K, V) error, opts ...DispatcherOption[K, V]) *Dispatcher[K, V] {
 	if slots <= 0 {
-		panic("syncx: dispatcher slots must be >= 1")
+		panic("syncx: NewDispatcher: slots must be >= 1")
 	}
 	if handler == nil {
-		panic("syncx: dispatcher handler must not be nil")
+		panic("syncx: NewDispatcher: handler must not be nil")
 	}
 
 	d := &Dispatcher[K, V]{
