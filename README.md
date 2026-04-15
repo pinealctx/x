@@ -121,14 +121,14 @@ Fixed-capacity queue that evicts the oldest item when full.
 
 ```go
 q := syncx.NewRingQueue[string](8)
-q.Push(ctx, "msg")
+q.Push("msg")
 v, err := q.Pop(ctx)
 
 // returns evicted value when full
 old, ok := q.PushEvict("overflow")
 ```
 
-Also: `TryPop` (non-blocking), `Peek`, `Len`, `Close`, `CloseNow`.
+Also: `PushEvict` (returns evicted value), `TryPop` (non-blocking), `Peek`, `Len`, `Close`, `CloseNow`.
 
 ### ReadThrough
 
@@ -275,7 +275,9 @@ Binary heap with custom comparator.
 h := ds.NewMinHeap[int]()   // min-heap
 h := ds.NewMaxHeap[int]()   // max-heap
 h := ds.NewHeap(func(a, b int) int { return a - b }) // custom
-h.Push(3, 1, 2)
+h.Push(3)
+h.Push(1)
+h.Push(2)
 v, _ := h.Pop() // 1 (min)
 ```
 
