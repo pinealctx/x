@@ -19,10 +19,10 @@ type Pool[T any] struct {
 // Panics if create is nil or more than one reset function is provided.
 func NewPool[T any](create func() T, reset ...func(T)) *Pool[T] {
 	if create == nil {
-		panic("syncx: NewPool requires a non-nil create function")
+		panic("syncx: NewPool: create must not be nil")
 	}
 	if len(reset) > 1 {
-		panic("syncx: NewPool accepts at most one reset function")
+		panic("syncx: NewPool: at most one reset function")
 	}
 	var resetFn func(T)
 	if len(reset) > 0 {

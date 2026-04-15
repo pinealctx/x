@@ -60,19 +60,19 @@ func TestExponential_NanosecondBase(t *testing.T) {
 }
 
 func TestExponential_PanicOnZeroBase(t *testing.T) {
-	assertPanic(t, "requires base > 0", func() {
+	assertPanic(t, "base must be > 0", func() {
 		NewExponential(0, 2.0)
 	})
 }
 
 func TestExponential_PanicOnNegativeBase(t *testing.T) {
-	assertPanic(t, "requires base > 0", func() {
+	assertPanic(t, "base must be > 0", func() {
 		NewExponential(-1*time.Second, 2.0)
 	})
 }
 
 func TestExponential_PanicOnFactorBelowOne(t *testing.T) {
-	assertPanic(t, "requires factor >= 1", func() {
+	assertPanic(t, "factor must be >= 1", func() {
 		NewExponential(time.Second, 0.5)
 	})
 }
@@ -88,13 +88,13 @@ func TestFixed_Wait(t *testing.T) {
 }
 
 func TestFixed_PanicOnZeroInterval(t *testing.T) {
-	assertPanic(t, "requires interval > 0", func() {
+	assertPanic(t, "interval must be > 0", func() {
 		NewFixed(0)
 	})
 }
 
 func TestFixed_PanicOnNegativeInterval(t *testing.T) {
-	assertPanic(t, "requires interval > 0", func() {
+	assertPanic(t, "interval must be > 0", func() {
 		NewFixed(-1 * time.Second)
 	})
 }
@@ -120,25 +120,25 @@ func TestJitter_WithinRange(t *testing.T) {
 }
 
 func TestJitter_PanicOnZeroRatio(t *testing.T) {
-	assertPanic(t, "requires ratio in (0, 1)", func() {
+	assertPanic(t, "ratio must be in (0, 1)", func() {
 		WithJitter(NewFixed(time.Second), 0)
 	})
 }
 
 func TestJitter_PanicOnOneRatio(t *testing.T) {
-	assertPanic(t, "requires ratio in (0, 1)", func() {
+	assertPanic(t, "ratio must be in (0, 1)", func() {
 		WithJitter(NewFixed(time.Second), 1)
 	})
 }
 
 func TestJitter_PanicOnNegativeRatio(t *testing.T) {
-	assertPanic(t, "requires ratio in (0, 1)", func() {
+	assertPanic(t, "ratio must be in (0, 1)", func() {
 		WithJitter(NewFixed(time.Second), -0.1)
 	})
 }
 
 func TestJitter_PanicOnRatioAboveOne(t *testing.T) {
-	assertPanic(t, "requires ratio in (0, 1)", func() {
+	assertPanic(t, "ratio must be in (0, 1)", func() {
 		WithJitter(NewFixed(time.Second), 1.5)
 	})
 }
@@ -191,13 +191,13 @@ func TestMaxWait_ExactBoundary(t *testing.T) {
 }
 
 func TestMaxWait_PanicOnZeroMax(t *testing.T) {
-	assertPanic(t, "requires max > 0", func() {
+	assertPanic(t, "max must be > 0", func() {
 		WithMaxWait(NewFixed(time.Second), 0)
 	})
 }
 
 func TestMaxWait_PanicOnNegativeMax(t *testing.T) {
-	assertPanic(t, "requires max > 0", func() {
+	assertPanic(t, "max must be > 0", func() {
 		WithMaxWait(NewFixed(time.Second), -1*time.Second)
 	})
 }

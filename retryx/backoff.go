@@ -29,10 +29,10 @@ type exponentialBackoff struct {
 // Panics if base <= 0 or factor < 1.
 func NewExponential(base time.Duration, factor float64) BackoffStrategy {
 	if base <= 0 {
-		panic("retryx: NewExponential requires base > 0")
+		panic("retryx: NewExponential: base must be > 0")
 	}
 	if factor < 1 {
-		panic("retryx: NewExponential requires factor >= 1")
+		panic("retryx: NewExponential: factor must be >= 1")
 	}
 	return &exponentialBackoff{base: base, factor: factor}
 }
@@ -55,7 +55,7 @@ type fixedBackoff struct {
 // Panics if interval <= 0.
 func NewFixed(interval time.Duration) BackoffStrategy {
 	if interval <= 0 {
-		panic("retryx: NewFixed requires interval > 0")
+		panic("retryx: NewFixed: interval must be > 0")
 	}
 	return &fixedBackoff{interval: interval}
 }
@@ -75,7 +75,7 @@ type jitterBackoff struct {
 // Panics if ratio <= 0 or ratio >= 1.
 func WithJitter(b BackoffStrategy, ratio float64) BackoffStrategy {
 	if ratio <= 0 || ratio >= 1 {
-		panic("retryx: WithJitter requires ratio in (0, 1)")
+		panic("retryx: WithJitter: ratio must be in (0, 1)")
 	}
 	return &jitterBackoff{inner: b, ratio: ratio}
 }
@@ -100,7 +100,7 @@ type maxWaitBackoff struct {
 // Panics if mx <= 0.
 func WithMaxWait(b BackoffStrategy, mx time.Duration) BackoffStrategy {
 	if mx <= 0 {
-		panic("retryx: WithMaxWait requires max > 0")
+		panic("retryx: WithMaxWait: max must be > 0")
 	}
 	return &maxWaitBackoff{inner: b, max: mx}
 }

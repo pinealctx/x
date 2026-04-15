@@ -16,11 +16,11 @@ func TestSet_BasicOperations(t *testing.T) {
 	if s.Add(1) {
 		t.Fatal("Add duplicate should return false")
 	}
-	if !s.Contains(1) {
-		t.Fatal("Contains(1) should be true")
+	if !s.Has(1) {
+		t.Fatal("Has(1) should be true")
 	}
-	if s.Contains(2) {
-		t.Fatal("Contains(2) should be false")
+	if s.Has(2) {
+		t.Fatal("Has(2) should be false")
 	}
 	if s.Len() != 1 {
 		t.Fatalf("Len = %d, want 1", s.Len())
@@ -43,7 +43,7 @@ func TestSet_NewSetDedup(t *testing.T) {
 		t.Fatalf("NewSet with dupes: Len = %d, want 3", s.Len())
 	}
 	for _, v := range []int{1, 2, 3} {
-		if !s.Contains(v) {
+		if !s.Has(v) {
 			t.Fatalf("should contain %d", v)
 		}
 	}
@@ -57,7 +57,7 @@ func TestSet_Union(t *testing.T) {
 		t.Fatalf("Union Len = %d, want 5", u.Len())
 	}
 	for _, v := range []int{1, 2, 3, 4, 5} {
-		if !u.Contains(v) {
+		if !u.Has(v) {
 			t.Fatalf("Union should contain %d", v)
 		}
 	}
@@ -71,7 +71,7 @@ func TestSet_IntersectEqualLen(t *testing.T) {
 		t.Fatalf("Intersect Len = %d, want 2", i.Len())
 	}
 	for _, v := range []int{3, 4} {
-		if !i.Contains(v) {
+		if !i.Has(v) {
 			t.Fatalf("Intersect should contain %d", v)
 		}
 	}
@@ -84,7 +84,7 @@ func TestSet_Difference(t *testing.T) {
 	if d.Len() != 1 {
 		t.Fatalf("Difference Len = %d, want 1", d.Len())
 	}
-	if !d.Contains(1) {
+	if !d.Has(1) {
 		t.Fatal("Difference should contain 1")
 	}
 }
@@ -97,7 +97,7 @@ func TestSet_SymmetricDifference(t *testing.T) {
 		t.Fatalf("SymmetricDifference Len = %d, want 2", sd.Len())
 	}
 	for _, v := range []int{1, 4} {
-		if !sd.Contains(v) {
+		if !sd.Has(v) {
 			t.Fatalf("SymmetricDifference should contain %d", v)
 		}
 	}
@@ -192,19 +192,19 @@ func TestSet_CloneIndependent(t *testing.T) {
 	// modify clone: original unchanged
 	c.Add(4)
 	c.Remove(1)
-	if s.Contains(4) {
+	if s.Has(4) {
 		t.Fatal("clone should be independent: original should not contain 4")
 	}
-	if !s.Contains(1) {
+	if !s.Has(1) {
 		t.Fatal("clone should be independent: original should still contain 1")
 	}
 	// modify original: clone unchanged
 	s.Add(5)
 	s.Remove(2)
-	if c.Contains(5) {
+	if c.Has(5) {
 		t.Fatal("clone should be independent: clone should not contain 5")
 	}
-	if !c.Contains(2) {
+	if !c.Has(2) {
 		t.Fatal("clone should be independent: clone should still contain 2")
 	}
 }
@@ -223,7 +223,7 @@ func TestSet_CloneSingleElement(t *testing.T) {
 	if c.Len() != 1 {
 		t.Fatalf("clone Len = %d, want 1", c.Len())
 	}
-	if !c.Contains(42) {
+	if !c.Has(42) {
 		t.Fatal("clone should contain 42")
 	}
 }
@@ -241,7 +241,7 @@ func TestSet_CloneLarge(t *testing.T) {
 		t.Fatalf("clone Len = %d, want 1000", c.Len())
 	}
 	for i := range 1000 {
-		if !c.Contains(i) {
+		if !c.Has(i) {
 			t.Fatalf("clone should contain %d", i)
 		}
 	}
@@ -276,7 +276,7 @@ func TestSet_Clear(t *testing.T) {
 	}
 	// can still use after clear
 	s.Add(10)
-	if !s.Contains(10) {
+	if !s.Has(10) {
 		t.Fatal("should work after Clear")
 	}
 }
@@ -335,10 +335,10 @@ func TestSet_StructTypeInstantiation(t *testing.T) {
 	s := NewSetWithCapacity[point](4)
 	s.Add(point{1, 2})
 	s.Add(point{3, 4})
-	if !s.Contains(point{1, 2}) {
+	if !s.Has(point{1, 2}) {
 		t.Fatal("should contain point{1,2}")
 	}
-	if s.Contains(point{1, 3}) {
+	if s.Has(point{1, 3}) {
 		t.Fatal("should not contain point{1,3}")
 	}
 }
@@ -378,7 +378,7 @@ func TestSet_ConcurrentRead(_ *testing.T) {
 		go func() {
 			defer func() { done <- struct{}{} }()
 			for i := range 100 {
-				s.Contains(i)
+				s.Has(i)
 			}
 			for range s.All() {
 				break
@@ -408,7 +408,7 @@ func TestSet_IntersectSwapBranch(t *testing.T) {
 		t.Fatalf("Intersect Len = %d, want 2", i.Len())
 	}
 	for _, v := range []int{3, 4} {
-		if !i.Contains(v) {
+		if !i.Has(v) {
 			t.Fatalf("Intersect should contain %d", v)
 		}
 	}

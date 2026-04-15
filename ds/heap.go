@@ -17,7 +17,7 @@ type Heap[T any] struct {
 // Panics if compare is nil.
 func NewHeap[T any](compare func(T, T) int) *Heap[T] {
 	if compare == nil {
-		panic("ds: Heap requires a non-nil compare function")
+		panic("ds: NewHeap: compare must not be nil")
 	}
 	return &Heap[T]{compare: compare}
 }
@@ -27,7 +27,7 @@ func NewHeap[T any](compare func(T, T) int) *Heap[T] {
 // Panics if compare is nil.
 func NewHeapFrom[T any](compare func(T, T) int, s []T) *Heap[T] {
 	if compare == nil {
-		panic("ds: Heap requires a non-nil compare function")
+		panic("ds: NewHeapFrom: compare must not be nil")
 	}
 	h := &Heap[T]{data: s, compare: compare}
 	h.heapify()

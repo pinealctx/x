@@ -14,6 +14,11 @@ import (
 // V is stored by value in both the hash map and the B-tree nodes. When V is a
 // large struct, each Set/Delete incurs a value copy inside the B-tree. In that
 // case, prefer using SortedMap[K, *V] to avoid the copy overhead.
+//
+// SortedMap does not provide Clone(), Keys(), or Values() because the sort key
+// is extracted from V via a caller-supplied function, making generic cloning
+// ambiguous (should the B-tree be rebuilt?), and ordered slices are better
+// obtained via the Ascend/Descend iterators.
 type SortedMap[K comparable, V any] struct {
 	m    map[K]V
 	tree *btree.BTreeG[V]

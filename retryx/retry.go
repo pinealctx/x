@@ -20,7 +20,7 @@ type config struct {
 // Panics if n <= 0.
 func Attempts(n int) Option {
 	if n <= 0 {
-		panic("retryx: Attempts requires n > 0")
+		panic("retryx: Attempts: n must be > 0")
 	}
 	return func(c *config) {
 		c.attempts = n

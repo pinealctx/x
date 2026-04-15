@@ -46,8 +46,8 @@ func (s *Set[T]) Remove(val T) bool {
 	return true
 }
 
-// Contains reports whether val is in the set.
-func (s *Set[T]) Contains(val T) bool {
+// Has reports whether val is in the set.
+func (s *Set[T]) Has(val T) bool {
 	_, ok := s.set[val]
 	return ok
 }
